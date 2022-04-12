@@ -2,7 +2,7 @@
 name = "Autoembedder"
 version = "1.0"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
-authors = ["Chris Lemke <chris.lemke@me.com>"]
+authors = ["Chris Lemke"]
 repository = "https://github.com/chrislemke/autoembedder"
 packages = [{ include = "autoembedder" }]
 
