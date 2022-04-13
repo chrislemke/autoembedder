@@ -7,7 +7,7 @@ import dask.dataframe as dd
 from torch.utils.data import DataLoader, IterableDataset
 
 
-class Dataset(IterableDataset):
+class PandasDataset(IterableDataset):
     def __init__(self, source: str):
         super().__init__()
         self.df = dd.read_parquet(source, infer_divisions=True, engine="pyarrow")
@@ -19,9 +19,9 @@ class Dataset(IterableDataset):
         raise NotImplementedError
 
 
-def dataloader(source: str, parameters: Dict) -> DataLoader:
+def pandas_dataloader(source: str, parameters: Dict) -> DataLoader:
     return DataLoader(
-        dataset=Dataset(source),
+        dataset=PandasDataset(source),
         batch_size=parameters["batch_size"],
         pin_memory=parameters["pin_memory"] == 1,
         num_workers=parameters["num_workers"],

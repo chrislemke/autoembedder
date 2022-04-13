@@ -9,7 +9,7 @@ from typing import Dict, List
 import learner
 import pandas as pd
 import torch
-from data import dataloader
+from data import pandas_dataloader
 from model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
 
@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--pin_memory", type=int, required=False, default=1)
     parser.add_argument("--num_workers", type=int, required=False, default=0)
     parser.add_argument(
-        "--model_title", type=str, required=False, default=f"autoembedder.bin"
+        "--model_title", type=str, required=False, default="autoembedder.bin"
     )
     parser.add_argument("--model_save_path", type=str, required=False)
     parser.add_argument(
@@ -58,7 +58,6 @@ def main():
     parser.add_argument("--tensorboard_log_path", type=str, required=False)
     parser.add_argument("--train_input_path", type=str, required=True)
     parser.add_argument("--test_input_path", type=str, required=True)
-    parser.add_argument("--eval_input_path", type=str, required=True)
     parser.add_argument(
         "--activation_for_code_layer", type=int, required=False, default=0
     )
@@ -99,8 +98,8 @@ def main():
 
 def __prepare_and_fit(parameters: Dict, model_params: Dict):
     torch.set_default_tensor_type(torch.DoubleTensor)
-    train_dl = dataloader(parameters["train_input_path"], parameters)
-    test_dl = dataloader(parameters["test_input_path"], parameters)
+    train_dl = pandas_dataloader(parameters["train_input_path"], parameters)
+    test_dl = pandas_dataloader(parameters["test_input_path"], parameters)
     num_continuous_cols = num_cont_columns(train_dl.dataset.df)  # type: ignore
     __check_for_consistent_cat_rows(
         train_dl.dataset.df, ast.literal_eval(parameters["cat_columns"])
