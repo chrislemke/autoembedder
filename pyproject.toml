@@ -7,8 +7,8 @@ repository = "https://github.com/chrislemke/autoembedder"
 packages = [{ include = "autoembedder" }]
 
 [tool.poetry.dependencies]
-python = "3.10.12"
-dask = "2022.04.0"
+python = "3.10.4"
+dask = "2022.5.0"
 pyarrow = "7.0.0"
 pandas = "1.4.2"
 torch = "1.11.0"
@@ -16,16 +16,17 @@ torchvision = "0.12."
 torchinfo = "1.6.5"
 einops = "0.4.1"
 tqdm = "4.64.0"
-tensorboard = "2.8.0"
-pytorch-ignite = "0.4.8"
+tensorboard = "2.9.0"
+pytorch-ignite = "0.4.9"
 numpy = "1.22.3"
 
 
 [tool.poetry.dev-dependencies]
 black = {extras = ["jupyter"], version = "22.3.0"}
-pylint = "2.13.5"
+pylint = "2.13.8"
 isort = "5.10.1"
-mypy = "0.942"
+mypy = "0.950"
+pre-commit = "2.19.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -68,5 +69,6 @@ disable = [
     "E0401",
     "E0401",
     "C0301",
-    "C0303"
+    "C0303",
+    "E0602"
     ]

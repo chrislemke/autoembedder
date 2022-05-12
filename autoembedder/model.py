@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 from einops import rearrange
 from torch import nn
+from torch.nn.utils.parametrizations import orthogonal
 
 
 def embedded_sizes_and_dims(
@@ -104,10 +105,6 @@ class Autoembedder(nn.Module):
 
         self.last_target: Optional[torch.Tensor] = None
         self.code_value: Optional[torch.Tensor] = None
-        self.activation_for_code_layer = config["activation_for_code_layer"]
-        self.activation_for_final_decoder_layer = config[
-            "activation_for_final_decoder_layer"
-        ]
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
@@ -156,56 +153,59 @@ class Autoembedder(nn.Module):
         self.last_target = (
             x.clone().detach()
         )  # Concatenated x values - used with the custom loss function: `AutoEmbLoss`.
-        x = self.__encoded(x)
+
+        x = self.__encode(x)
         self.code_value = x.clone().detach()  # Stores the values of the code layer.
-        return self.__decoded(x)
+        return self.__decode(x)
 
     def init_xavier_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
 
-    def __encoded(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.leaky_relu(self.encoder_input(x))  # type: ignore  # pylint: disable=R1725
-        for index, layer in enumerate(self.encoder_hidden_layers):
-            x = layer(x)
-            if (
-                index != len(self.encoder_hidden_layers) - 1
-                or self.activation_for_code_layer is True
-            ):
-                x = F.leaky_relu(x)
+    def __encode(self, x: torch.Tensor) -> torch.Tensor:
+        x = F.leaky_relu(self.encoder_input(x))
+        for layer in self.encoder_hidden_layers:
+            x = F.leaky_relu(layer(x))
         return x
 
-    def __decoded(self, x: torch.Tensor) -> torch.Tensor:
-        for layer in self.decoder_hidden_layers:  # type: ignore
-            x = layer(x)
-            x = F.leaky_relu(x)
-
-        x = self.decoder_output(x)
-        if self.activation_for_final_decoder_layer:
-            x = torch.tanh(x)
-        return x
+    def __decode(self, x: torch.Tensor) -> torch.Tensor:
+        for layer in self.decoder_hidden_layers:
+            x = F.leaky_relu(layer(x))
+        return F.leaky_relu(self.decoder_output(x))
 
     def __linear_layers(
         self, config: Dict, num_cont_features: int
-    ) -> Tuple[nn.Linear, nn.ModuleList, nn.ModuleList, nn.Linear]:
+    ) -> Tuple[nn.Module, nn.ModuleList, nn.ModuleList, nn.Module]:
         """
         :param config: Configuration containing the hidden layer structure of the model.
         :return: A tuple containing the linear layers.
         """
 
-        sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)
+        sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)  # type: ignore
         in_features = num_cont_features + sum_emb_dims
 
         hl = config["hidden_layers"]
-        encoder_input = nn.Linear(in_features, hl[0][0])
+        encoder_input = orthogonal(
+            nn.Linear(in_features, hl[0][0], bias=config["layer_bias"] == 1)
+        )
         encoder_hidden_layers = nn.ModuleList(
-            [nn.Linear(hl[x][0], hl[x][1]) for x in range(len(hl))]
+            [
+                orthogonal(
+                    nn.Linear(hl[x][0], hl[x][1], bias=config["layer_bias"] == 1)
+                )
+                for x in range(len(hl))
+            ]
         )
-        decoder_hidden_layers = nn.ModuleList(
-            [nn.Linear(hl[x][1], hl[x][0]) for x in reversed(range(len(hl)))]
-        )
-        decoder_output = nn.Linear(hl[0][0], in_features)
+
+        decoder_hidden_layers = nn.ModuleList([])
+        for x in reversed(range(len(hl))):
+            layer = nn.Linear(hl[x][1], hl[x][0], bias=False)
+            layer.weight = nn.Parameter(encoder_hidden_layers[x].weight.t())
+            decoder_hidden_layers.append(layer)
+
+        decoder_output = nn.Linear(hl[0][0], in_features, bias=False)
+        decoder_output.weight = nn.Parameter(encoder_input.weight.t())
 
         return (
             encoder_input,

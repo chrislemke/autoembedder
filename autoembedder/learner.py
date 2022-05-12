@@ -8,14 +8,15 @@ from pathlib import Path
 from typing import Dict, NamedTuple
 
 import torch
+from fps_ai.training.autoencoder.evaluator import loss_delta
+from fps_ai.training.autoencoder.lr_schedular import ReduceLROnPlateauScheduler
+from fps_ai.training.autoencoder.model import Autoembedder, model_input
 from ignite.contrib.handlers.tensorboard_logger import *  # pylint: disable=W0401,W0614
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.engine import Engine
 from ignite.engine.events import Events
-from ignite.handlers import Checkpoint, EarlyStopping, TerminateOnNan
+from ignite.handlers import Checkpoint, TerminateOnNan
 from ignite.metrics import RunningAverage
-from lr_schedular import ReduceLROnPlateauScheduler
-from model import Autoembedder, model_input
 from torch import nn
 from torch.nn import MSELoss
 from torch.optim import Adam
@@ -58,21 +59,35 @@ def fit(
         )
     )
     validator = Engine(partial(__validation_step, model=model, criterion=criterion))
+    evaluator = Engine(
+        partial(loss_delta, model=model, eval_input_path=parameters["eval_input_path"])
+    )
 
     __print_summary(model, train_dataloader)
     __attach_scheduler_if_needed(validator, optimizer, parameters)
     __attach_progress_bar(trainer)
     __attach_tb_logger_if_needed(
-        trainer, validator, tb_logger, model, optimizer, parameters
+        trainer, validator, evaluator, tb_logger, model, optimizer, parameters
     )
-    __attach_early_stopping_if_needed(validator, trainer, parameters)
     __attach_terminate_on_nan(trainer)
     __attach_validation(trainer, validator, test_dataloader)
+    if parameters["eval_input_path"]:
+        __attach_evaluation(trainer, evaluator, test_dataloader)
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
     )
     __attach_save_model_if_needed(trainer, model, parameters)
-    __attach_tb_teardown_if_needed(tb_logger, trainer, validator, parameters)
+    __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
+
+    if parameters["load_checkpoint_path"]:
+        checkpoint = torch.load(
+            parameters["load_checkpoint_path"],
+            map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        )
+        Checkpoint.load_objects(
+            to_load={"model": model, "optimizer": optimizer, "trainer": trainer},
+            checkpoint=checkpoint,
+        )
 
     trainer.run(
         train_dataloader,
@@ -143,6 +158,30 @@ def __attach_validation(
     )
 
 
+def __attach_evaluation(trainer: Engine, evaluator: Engine, dataloader: DataLoader):
+    def run_evaluator(trainer: Engine, evaluator: Engine, dataloader: DataLoader):
+        evaluator.run(
+            dataloader,
+            epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
+            max_epochs=1,
+        )
+        ProgressBar(True).log_message(
+            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss delta: {evaluator.state.metrics['mean_loss_delta']:.7f}"
+        )
+        ProgressBar(True).log_message(
+            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss delta: {evaluator.state.metrics['median_loss_delta']:.7f}"
+        )  # pylint: disable=C0301
+
+    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_delta")
+    RunningAverage(output_transform=lambda x: x[1]).attach(
+        evaluator, "median_loss_delta"
+    )
+    trainer.add_event_handler(
+        Events.EPOCH_COMPLETED,
+        partial(run_evaluator, evaluator=evaluator, dataloader=dataloader),
+    )
+
+
 def __attach_scheduler_if_needed(engine: Engine, optimizer: Adam, parameters: Dict):
     if parameters["lr_scheduler"] == 0 or parameters["scheduler_patience"] < 0:
         return
@@ -159,6 +198,7 @@ def __attach_scheduler_if_needed(engine: Engine, optimizer: Adam, parameters: Di
 def __attach_tb_logger_if_needed(
     trainer: Engine,
     validator: Engine,
+    evaluator: Engine,
     tb_logger: TensorboardLogger,
     model: Autoembedder,
     optimizer: Adam,
@@ -184,6 +224,20 @@ def __attach_tb_logger_if_needed(
         event_name=Events.EPOCH_COMPLETED,
         tag="loss/validation",
         metric_names=["loss"],
+        global_step_transform=global_step_from_engine(trainer),
+    )
+    tb_logger.attach_output_handler(
+        evaluator,
+        event_name=Events.EPOCH_COMPLETED,
+        tag="loss_delta",
+        metric_names=["mean_loss_delta"],
+        global_step_transform=global_step_from_engine(trainer),
+    )
+    tb_logger.attach_output_handler(
+        evaluator,
+        event_name=Events.EPOCH_COMPLETED,
+        tag="loss_delta",
+        metric_names=["median_loss_delta"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach(
@@ -215,6 +269,7 @@ def __attach_tb_teardown_if_needed(
     tb_logger: TensorboardLogger,
     trainer: Engine,
     validator: Engine,
+    evaluator: Engine,
     parameters: Dict,
 ):
     def teardown_tb_logger(
@@ -227,6 +282,14 @@ def __attach_tb_teardown_if_needed(
             "hparam/train_loss": trainer.state.metrics["loss"],
             "hparam/val_loss": validator.state.metrics["loss"],
         }
+        if parameters["eval_input_path"]:
+            metrics["hparam/mean_loss_delta"] = evaluator.state.metrics[
+                "median_loss_delta"
+            ]
+            metrics["hparam/median_loss_delta"] = evaluator.state.metrics[
+                "median_loss_delta"
+            ]
+
         tb_logger.writer.add_hparams(
             hparam_dict=parameters,
             metric_dict=metrics,
@@ -273,24 +336,6 @@ def __attach_checkpoint_saving_if_needed(
         n_saved=parameters["n_save_checkpoints"],
     )
     engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
-
-
-def __attach_early_stopping_if_needed(
-    engine: Engine, trainer: Engine, parameters: Dict
-):
-    def score_function(engine: Engine):
-        return engine.state.metrics["loss"]
-
-    if parameters["early_stopping_patience"] < 1:
-        return
-
-    handler = EarlyStopping(
-        patience=parameters["early_stopping_patience"],
-        score_function=score_function,
-        trainer=trainer,
-        min_delta=parameters["early_stopping_min_delta"],
-    )
-    engine.add_event_handler(Events.COMPLETED, handler)
 
 
 def __attach_save_model_if_needed(engine: Engine, model: nn.Module, parameters: Dict):
