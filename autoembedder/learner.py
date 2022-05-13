@@ -7,6 +7,7 @@ from functools import partial
 from pathlib import Path
 from typing import Dict, NamedTuple
 
+import tensorwatch as tw
 import torch
 from fps_ai.training.autoencoder.evaluator import loss_delta
 from fps_ai.training.autoencoder.lr_schedular import ReduceLROnPlateauScheduler
@@ -48,6 +49,8 @@ def fit(
         tb_logger = TensorboardLogger(
             log_dir=f"{parameters['tensorboard_log_path']}/{date.strftime('%Y.%m.%d-%H_%M')}"
         )
+    if parameters["use_tensorwatch"] == 1:
+        tensorwatch = tw.Watcher()
 
     trainer = Engine(
         partial(
@@ -74,9 +77,11 @@ def fit(
     if parameters["eval_input_path"]:
         __attach_evaluation(trainer, evaluator, test_dataloader)
     __attach_checkpoint_saving_if_needed(
-        trainer, validator, model, optimizer, parameters
+        trainer, validator, model, optimizer, criterion, parameters
     )
-    __attach_save_model_if_needed(trainer, model, parameters)
+    if parameters["use_tensorwatch"] == 1:
+        __attach_tensorwatch(trainer, tensorwatch)
+    __attach_save_model_if_needed(trainer, model, optimizer, criterion, parameters)
     __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
 
     if parameters["load_checkpoint_path"]:
@@ -313,43 +318,95 @@ def __attach_tb_teardown_if_needed(
 
 
 def __attach_checkpoint_saving_if_needed(
-    trainer: Engine,
     engine: Engine,
+    validator: Engine,
     model: nn.Module,
     optimizer: Adam,
+    loss: MSELoss,
     parameters: Dict,
-    metric: str = "loss",
 ):
-    def score_function(engine: Engine):
-        return engine.state.metrics[metric]
+
+    checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}"
+    Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
+
+    def save_checkpoint(
+        engine: Engine,
+        validator: Engine,
+        model: nn.Module,
+        optimizer: Adam,
+        loss: MSELoss,
+        path: str,
+    ):
+        loss = round(validator.state.metrics["loss"], 5)
+        torch.save(
+            {
+                "epoch": engine.state.epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "loss": loss,
+            },
+            f"{path}/checkpoint_val-loss_{loss}.pt",
+        )
 
     if parameters["n_save_checkpoints"] == 0:
         return
 
-    checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y.%m.%d-%H-%M-%S')}"
-    Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
-    checkpointer = Checkpoint(
-        to_save={"model": model, "optimizer": optimizer, "trainer": trainer},
-        save_handler=checkpoint_dir,
-        score_name=metric,
-        score_function=score_function,
-        n_saved=parameters["n_save_checkpoints"],
+    engine.add_event_handler(
+        Events.EPOCH_COMPLETED(every=1),
+        partial(
+            save_checkpoint,
+            model=model,
+            validator=validator,
+            optimizer=optimizer,
+            loss=loss,
+            path=checkpoint_dir,
+        ),
     )
-    engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
 
 
-def __attach_save_model_if_needed(engine: Engine, model: nn.Module, parameters: Dict):
-    def save_model(engine: Engine, model: Autoembedder, parameters: Dict):
+def __attach_save_model_if_needed(
+    engine: Engine, model: nn.Module, optimizer: Adam, loss: MSELoss, parameters: Dict
+):
+    def save_model(
+        engine: Engine,
+        model: nn.Module,
+        optimizer: Adam,
+        loss: MSELoss,
+        parameters: Dict,
+    ):
         Path(parameters["model_save_path"]).mkdir(parents=True, exist_ok=True)
         torch.save(
-            model, f"{parameters['model_save_path']}/{parameters['model_title']}"
+            {
+                "epoch": engine.state.epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "loss": loss,
+            },
+            f"{parameters['model_save_path']}/{parameters['model_title']}",
         )
 
     if parameters["model_save_path"] is None:
         return
 
     engine.add_event_handler(
-        Events.COMPLETED, partial(save_model, model=model, parameters=parameters)
+        Events.COMPLETED,
+        partial(
+            save_model,
+            model=model,
+            optimizer=optimizer,
+            loss=loss,
+            parameters=parameters,
+        ),
+    )
+
+
+def __attach_tensorwatch(trainer: Engine, tensorwatch: tw.Watcher):
+    def attach_to_tensorwatch(trainer: Engine, tensorwatch: tw.Watcher):
+        tensorwatch.observe(train_loss=trainer.state.metrics["loss"])
+
+    trainer.add_event_handler(
+        Events.ITERATION_COMPLETED,
+        partial(attach_to_tensorwatch, tensorwatch=tensorwatch),
     )
 
 
