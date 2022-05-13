@@ -26,14 +26,14 @@ def main():
     parser.add_argument("--pin_memory", type=int, required=False, default=1)
     parser.add_argument("--num_workers", type=int, required=False, default=0)
     parser.add_argument(
-        "--model_title", type=str, required=False, default=f"autoembedder_{date}.bin"
+        "--model_title", type=str, required=False, default=f"autoembedder_{date}.pt"
     )
     parser.add_argument("--model_save_path", type=str, required=False)
     parser.add_argument(
         "--n_save_checkpoints",
         type=int,
         required=False,
-        default=3,
+        default=6,
         help="Number of stored checkpoints.",
     )
     parser.add_argument(
@@ -53,7 +53,7 @@ def main():
     parser.add_argument("--scheduler_patience", type=int, required=False, default=2)
 
     parser.add_argument("--lr", type=float, required=False, default=0.0001)
-    parser.add_argument("--epochs", type=int, required=False, default=10)
+    parser.add_argument("--epochs", type=int, required=False, default=20)
     parser.add_argument(
         "--layer_bias",
         type=int,
@@ -65,6 +65,14 @@ def main():
     parser.add_argument("--l1_lambda", type=float, required=False, default=0)
     parser.add_argument("--xavier_init", type=int, required=False, default=1)
     parser.add_argument("--tensorboard_log_path", type=str, required=False)
+    parser.add_argument("--use_tensorwatch", type=int, required=False, default=0)
+    parser.add_argument(
+        "--drop_cat_columns",
+        type=int,
+        required=False,
+        default=0,
+        help="If `1`, drop categorical columns from the datasets.",
+    )
     parser.add_argument("--train_input_path", type=str, required=True)
     parser.add_argument("--test_input_path", type=str, required=True)
     parser.add_argument("--eval_input_path", type=str, required=False)
@@ -86,6 +94,7 @@ def main():
         help="""
         Contains a string representation of a list of list of categorical columns (strings).
         The columns which use the same encoder should be together in a list. E.g.: `"[['a', 'b'], ['c']]"`.
+        If you don't need or want to use categorical columns from your dataset you may consinder using: `--drop_cat_columns`.
         """,
     )
 

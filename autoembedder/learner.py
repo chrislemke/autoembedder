@@ -76,8 +76,11 @@ def fit(
     __attach_validation(trainer, validator, test_dataloader)
     if parameters["eval_input_path"]:
         __attach_evaluation(trainer, evaluator, test_dataloader)
+    # __attach_checkpoint_saving_if_needed(
+    #     trainer, validator, model, optimizer, criterion, parameters
+    # )
     __attach_checkpoint_saving_if_needed(
-        trainer, validator, model, optimizer, criterion, parameters
+        trainer, validator, model, optimizer, parameters
     )
     if parameters["use_tensorwatch"] == 1:
         __attach_tensorwatch(trainer, tensorwatch)
@@ -92,6 +95,13 @@ def fit(
         Checkpoint.load_objects(
             to_load={"model": model, "optimizer": optimizer, "trainer": trainer},
             checkpoint=checkpoint,
+        )
+        print(
+            f"""
+        Checkpoint loaded!
+        Epoch_length: {checkpoint['trainer']['epoch_length']}
+        Iterations: {checkpoint['trainer']['iteration']}
+        """
         )
 
     trainer.run(
@@ -318,50 +328,29 @@ def __attach_tb_teardown_if_needed(
 
 
 def __attach_checkpoint_saving_if_needed(
+    trainer: Engine,
     engine: Engine,
-    validator: Engine,
     model: nn.Module,
     optimizer: Adam,
-    loss: MSELoss,
     parameters: Dict,
+    metric: str = "loss",
 ):
-
-    checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}"
-    Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
-
-    def save_checkpoint(
-        engine: Engine,
-        validator: Engine,
-        model: nn.Module,
-        optimizer: Adam,
-        loss: MSELoss,
-        path: str,
-    ):
-        loss = round(validator.state.metrics["loss"], 5)
-        torch.save(
-            {
-                "epoch": engine.state.epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "loss": loss,
-            },
-            f"{path}/checkpoint_val-loss_{loss}.pt",
-        )
+    def score_function(engine: Engine):
+        return engine.state.metrics[metric]
 
     if parameters["n_save_checkpoints"] == 0:
         return
 
-    engine.add_event_handler(
-        Events.EPOCH_COMPLETED(every=1),
-        partial(
-            save_checkpoint,
-            model=model,
-            validator=validator,
-            optimizer=optimizer,
-            loss=loss,
-            path=checkpoint_dir,
-        ),
+    checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}.pt"
+    Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
+    checkpointer = Checkpoint(
+        to_save={"model": model, "optimizer": optimizer, "trainer": trainer},
+        save_handler=checkpoint_dir,
+        score_name=metric,
+        score_function=score_function,
+        n_saved=parameters["n_save_checkpoints"],
     )
+    engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
 
 
 def __attach_save_model_if_needed(
@@ -382,7 +371,7 @@ def __attach_save_model_if_needed(
                 "optimizer_state_dict": optimizer.state_dict(),
                 "loss": loss,
             },
-            f"{parameters['model_save_path']}/{parameters['model_title']}",
+            f"{parameters['model_save_path']}/{parameters['model_title']}.pt",
         )
 
     if parameters["model_save_path"] is None:
