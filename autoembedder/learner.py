@@ -12,6 +12,7 @@ import torch
 from fps_ai.training.autoencoder.evaluator import loss_delta
 from fps_ai.training.autoencoder.lr_schedular import ReduceLROnPlateauScheduler
 from fps_ai.training.autoencoder.model import Autoembedder, model_input
+from fps_ai.training.utils.metadata_logger import store_metadata
 from ignite.contrib.handlers.tensorboard_logger import *  # pylint: disable=W0401,W0614
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.engine import Engine
@@ -74,11 +75,9 @@ def fit(
     )
     __attach_terminate_on_nan(trainer)
     __attach_validation(trainer, validator, test_dataloader)
+
     if parameters["eval_input_path"]:
         __attach_evaluation(trainer, evaluator, test_dataloader)
-    # __attach_checkpoint_saving_if_needed(
-    #     trainer, validator, model, optimizer, criterion, parameters
-    # )
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
     )
@@ -341,7 +340,7 @@ def __attach_checkpoint_saving_if_needed(
     if parameters["n_save_checkpoints"] == 0:
         return
 
-    checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}.pt"
+    checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}"
     Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
     checkpointer = Checkpoint(
         to_save={"model": model, "optimizer": optimizer, "trainer": trainer},
@@ -362,8 +361,8 @@ def __attach_save_model_if_needed(
         optimizer: Adam,
         loss: MSELoss,
         parameters: Dict,
+        path: str,
     ):
-        Path(parameters["model_save_path"]).mkdir(parents=True, exist_ok=True)
         torch.save(
             {
                 "epoch": engine.state.epoch,
@@ -371,11 +370,35 @@ def __attach_save_model_if_needed(
                 "optimizer_state_dict": optimizer.state_dict(),
                 "loss": loss,
             },
-            f"{parameters['model_save_path']}/{parameters['model_title']}.pt",
+            f"{path}/{parameters['model_title']}",
         )
+        torch.save(
+            model.state_dict(),
+            f"{path}/{parameters['model_title']}".replace(".pt", ".bin"),
+        )
+
+    def log_metadata(
+        engine: Engine,
+        validator: Engine,
+        parameters: dict,
+        path: str,
+    ):
+        metadata = {
+            "training_loss": engine.state.metrics["loss"],
+            "validation_loss": validator.state.metrics["loss"],
+        }
+        metadata.update(parameters)
+        store_metadata(path, metadata)
 
     if parameters["model_save_path"] is None:
         return
+
+    model_save_path = (
+        f"{parameters['model_save_path']}/{parameters['model_title']}".replace(
+            ".bin", ""
+        ).replace(".pt", "")
+    )
+    Path(model_save_path).mkdir(parents=True, exist_ok=True)
 
     engine.add_event_handler(
         Events.COMPLETED,
@@ -385,6 +408,16 @@ def __attach_save_model_if_needed(
             optimizer=optimizer,
             loss=loss,
             parameters=parameters,
+            path=model_save_path,
+        ),
+    )
+    engine.add_event_handler(
+        Events.COMPLETED,
+        partial(
+            log_metadata,
+            validator=engine,
+            parameters=parameters,
+            path=f"{parameters['model_save_path']}/metadata.csv",
         ),
     )
 
