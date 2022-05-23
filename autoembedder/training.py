@@ -7,15 +7,11 @@ import itertools
 from datetime import datetime
 from typing import Dict, List
 
+import learner
 import pandas as pd
 import torch
-from fps_ai.training.autoencoder import learner
-from fps_ai.training.autoencoder.data import dataloader
-from fps_ai.training.autoencoder.model import (
-    Autoembedder,
-    embedded_sizes_and_dims,
-    num_cont_columns,
-)
+from data import dataloader
+from model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
 
 def main():
@@ -70,12 +66,11 @@ def main():
     parser.add_argument("--l1_lambda", type=float, required=False, default=0)
     parser.add_argument("--xavier_init", type=int, required=False, default=0)
     parser.add_argument("--tensorboard_log_path", type=str, required=False)
-    parser.add_argument("--use_tensorwatch", type=int, required=False, default=0)
     parser.add_argument(
         "--drop_cat_columns",
         type=int,
         required=False,
-        default=1,
+        default=0,
         help="If `1`, drop categorical columns from the datasets.",
     )
     parser.add_argument("--train_input_path", type=str, required=True)

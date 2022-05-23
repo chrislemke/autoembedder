@@ -5,20 +5,19 @@
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Union
 
-import tensorwatch as tw
+import numpy as np
 import torch
-from fps_ai.training.autoencoder.evaluator import loss_delta
-from fps_ai.training.autoencoder.lr_schedular import ReduceLROnPlateauScheduler
-from fps_ai.training.autoencoder.model import Autoembedder, model_input
-from fps_ai.training.utils.metadata_logger import store_metadata
+from evaluator import loss_delta
 from ignite.contrib.handlers.tensorboard_logger import *  # pylint: disable=W0401,W0614
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.engine import Engine
 from ignite.engine.events import Events
 from ignite.handlers import Checkpoint, TerminateOnNan
 from ignite.metrics import RunningAverage
+from lr_schedular import ReduceLROnPlateauScheduler
+from model import Autoembedder, model_input
 from torch import nn
 from torch.nn import MSELoss
 from torch.optim import Adam
@@ -62,8 +61,6 @@ def fit(
         tb_logger = TensorboardLogger(
             log_dir=f"{parameters['tensorboard_log_path']}/{date.strftime('%Y.%m.%d-%H_%M')}"
         )
-    if parameters["use_tensorwatch"] == 1:
-        tensorwatch = tw.Watcher()
 
     trainer = Engine(
         partial(
@@ -89,18 +86,13 @@ def fit(
     )
     __attach_terminate_on_nan(trainer)
     __attach_validation(trainer, validator, test_dataloader)
-    __attach_early_stopping_if_needed(validator, trainer, parameters)
 
     if parameters["eval_input_path"]:
         __attach_evaluation(trainer, evaluator, test_dataloader)
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
     )
-    if parameters["use_tensorwatch"] == 1:
-        __attach_tensorwatch(trainer, tensorwatch)
-    __attach_save_model_if_needed(
-        trainer, validator, model, optimizer, criterion, parameters
-    )
+
     __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
 
     if parameters["load_checkpoint_path"]:
@@ -142,7 +134,7 @@ def __training_step(
     optimizer: Adam,
     criterion: MSELoss,
     parameters: Dict,
-) -> torch.float32:
+) -> Union[np.float32, np.float64]:
     model.train()
     optimizer.zero_grad()
     cat, cont = model_input(batch, parameters)
@@ -165,7 +157,7 @@ def __validation_step(
     model: Autoembedder,
     criterion: MSELoss,
     parameters: Dict,
-) -> torch.float32:
+) -> Union[np.float32, np.float64]:
     model.eval()
     with torch.no_grad():
         cat, cont = model_input(batch, parameters)
@@ -221,24 +213,6 @@ def __attach_evaluation(trainer: Engine, evaluator: Engine, dataloader: DataLoad
         Events.EPOCH_COMPLETED,
         partial(run_evaluator, evaluator=evaluator, dataloader=dataloader),
     )
-
-
-def __attach_early_stopping_if_needed(
-    validator: Engine, trainer: Engine, parameters: Dict
-):
-    def score_function(engine: Engine):
-        return engine.state.metrics["loss"]
-
-    if parameters["early_stopping_patience"] < 1:
-        return
-
-    handler = EarlyStopping(
-        patience=parameters["early_stopping_patience"],
-        score_function=score_function,
-        trainer=trainer,
-    )
-
-    validator.add_event_handler(Events.COMPLETED, handler)
 
 
 def __attach_scheduler_if_needed(engine: Engine, optimizer: Adam, parameters: Dict):
@@ -470,16 +444,6 @@ def __attach_save_model_if_needed(
             parameters=parameters,
             path=f"{parameters['model_save_path']}/metadata.csv",
         ),
-    )
-
-
-def __attach_tensorwatch(trainer: Engine, tensorwatch: tw.Watcher):
-    def attach_to_tensorwatch(trainer: Engine, tensorwatch: tw.Watcher):
-        tensorwatch.observe(train_loss=trainer.state.metrics["loss"])
-
-    trainer.add_event_handler(
-        Events.ITERATION_COMPLETED,
-        partial(attach_to_tensorwatch, tensorwatch=tensorwatch),
     )
 
 
