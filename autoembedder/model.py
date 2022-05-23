@@ -6,7 +6,6 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 import dask.dataframe as dd
 import numpy as np
 import torch
-import torch.nn.functional as F
 from einops import rearrange
 from torch import nn
 from torch.nn.utils.parametrizations import orthogonal
@@ -44,7 +43,9 @@ def num_cont_columns(df: dd.DataFrame) -> int:
     return len(df.select_dtypes(exclude=["category"]).columns)
 
 
-def model_input(batch: NamedTuple) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+def model_input(
+    batch: NamedTuple, parameters: Dict
+) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     """
     :param batch: Batch provided by dataset.
     :return: Tuple of `torch.Tensor`. The first item contains the categorical values, the second item the
@@ -54,7 +55,13 @@ def model_input(batch: NamedTuple) -> Tuple[torch.Tensor, Optional[torch.Tensor]
     different arguments this function splits the batch by type. It works with a batch of `torch.Tensor` and with floats
     and ints.
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available() and parameters["no_mps"] == 0
+        else "cpu"
+    )
     cat = []
     cont = []
     if isinstance(batch[0], torch.Tensor):
@@ -62,6 +69,12 @@ def model_input(batch: NamedTuple) -> Tuple[torch.Tensor, Optional[torch.Tensor]
             if feature.dtype in [torch.int32, torch.int64]:
                 cat.append(feature)
             elif feature.dtype in [torch.float32, torch.float64]:
+                if (
+                    feature.dtype == torch.float64
+                    and torch.backends.mps.is_available()
+                    and parameters["no_mps"] == 0
+                ):
+                    feature = feature.to(torch.float32)
                 cont.append(feature)
             else:
                 raise ValueError(f"Unsupported dtype: {feature.dtype}!")
@@ -105,6 +118,7 @@ class Autoembedder(nn.Module):
 
         self.last_target: Optional[torch.Tensor] = None
         self.code_value: Optional[torch.Tensor] = None
+        self.leaky_relu = torch.nn.LeakyReLU(0.1)
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
@@ -164,15 +178,15 @@ class Autoembedder(nn.Module):
                 nn.init.xavier_normal_(m.weight)
 
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.leaky_relu(self.encoder_input(x))
+        x = self.leaky_relu(self.encoder_input(x))
         for layer in self.encoder_hidden_layers:
-            x = F.leaky_relu(layer(x))
+            x = self.leaky_relu(layer(x))
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.decoder_hidden_layers:
-            x = F.leaky_relu(layer(x))
-        return F.leaky_relu(self.decoder_output(x))
+            x = self.leaky_relu(layer(x))
+        return self.leaky_relu(self.decoder_output(x))
 
     def __linear_layers(
         self, config: Dict, num_cont_features: int

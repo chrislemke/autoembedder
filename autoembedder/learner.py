@@ -35,10 +35,22 @@ def fit(
     test_dataloader: DataLoader,
 ):
     model = model.to(
-        torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ).double()
+        torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps"
+            if torch.backends.mps.is_available() and parameters["no_mps"] == 0
+            else "cpu"
+        )
+    )
+    if torch.backends.mps.is_available() is False or parameters["no_mps"] == 1:
+        model = model.double()
+
     optimizer = Adam(
-        model.parameters(), lr=parameters["lr"], weight_decay=parameters["weight_decay"]
+        model.parameters(),
+        lr=parameters["lr"],
+        weight_decay=parameters["weight_decay"],
+        amsgrad=parameters["amsgrad"] == 1,
     )
     criterion = MSELoss()
 
@@ -62,12 +74,14 @@ def fit(
             parameters=parameters,
         )
     )
-    validator = Engine(partial(__validation_step, model=model, criterion=criterion))
-    evaluator = Engine(
-        partial(loss_delta, model=model, eval_input_path=parameters["eval_input_path"])
+    validator = Engine(
+        partial(
+            __validation_step, model=model, criterion=criterion, parameters=parameters
+        )
     )
+    evaluator = Engine(partial(loss_delta, model=model, parameters=parameters))
 
-    __print_summary(model, train_dataloader)
+    __print_summary(model, train_dataloader, parameters)
     __attach_scheduler_if_needed(validator, optimizer, parameters)
     __attach_progress_bar(trainer)
     __attach_tb_logger_if_needed(
@@ -75,6 +89,7 @@ def fit(
     )
     __attach_terminate_on_nan(trainer)
     __attach_validation(trainer, validator, test_dataloader)
+    __attach_early_stopping_if_needed(validator, trainer, parameters)
 
     if parameters["eval_input_path"]:
         __attach_evaluation(trainer, evaluator, test_dataloader)
@@ -83,13 +98,21 @@ def fit(
     )
     if parameters["use_tensorwatch"] == 1:
         __attach_tensorwatch(trainer, tensorwatch)
-    __attach_save_model_if_needed(trainer, model, optimizer, criterion, parameters)
+    __attach_save_model_if_needed(
+        trainer, validator, model, optimizer, criterion, parameters
+    )
     __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
 
     if parameters["load_checkpoint_path"]:
         checkpoint = torch.load(
             parameters["load_checkpoint_path"],
-            map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+            map_location=torch.device(
+                "cuda"
+                if torch.cuda.is_available()
+                else "mps"
+                if torch.backends.mps.is_available() and parameters["no_mps"] == 0
+                else "cpu"
+            ),
         )
         Checkpoint.load_objects(
             to_load={"model": model, "optimizer": optimizer, "trainer": trainer},
@@ -119,10 +142,10 @@ def __training_step(
     optimizer: Adam,
     criterion: MSELoss,
     parameters: Dict,
-) -> torch.float64:
+) -> torch.float32:
     model.train()
     optimizer.zero_grad()
-    cat, cont = model_input(batch)
+    cat, cont = model_input(batch, parameters)
     outputs = model(cat, cont)
     train_loss = criterion(outputs, model.last_target)
 
@@ -137,11 +160,15 @@ def __training_step(
 
 
 def __validation_step(
-    engine: Engine, batch: NamedTuple, model: Autoembedder, criterion: MSELoss
-) -> torch.float64:
+    engine: Engine,
+    batch: NamedTuple,
+    model: Autoembedder,
+    criterion: MSELoss,
+    parameters: Dict,
+) -> torch.float32:
     model.eval()
     with torch.no_grad():
-        cat, cont = model_input(batch)
+        cat, cont = model_input(batch, parameters)
         val_outputs = model(cat, cont)
         val_loss = criterion(val_outputs, model.last_target)
     return val_loss.item()
@@ -194,6 +221,24 @@ def __attach_evaluation(trainer: Engine, evaluator: Engine, dataloader: DataLoad
         Events.EPOCH_COMPLETED,
         partial(run_evaluator, evaluator=evaluator, dataloader=dataloader),
     )
+
+
+def __attach_early_stopping_if_needed(
+    validator: Engine, trainer: Engine, parameters: Dict
+):
+    def score_function(engine: Engine):
+        return engine.state.metrics["loss"]
+
+    if parameters["early_stopping_patience"] < 1:
+        return
+
+    handler = EarlyStopping(
+        patience=parameters["early_stopping_patience"],
+        score_function=score_function,
+        trainer=trainer,
+    )
+
+    validator.add_event_handler(Events.COMPLETED, handler)
 
 
 def __attach_scheduler_if_needed(engine: Engine, optimizer: Adam, parameters: Dict):
@@ -335,7 +380,7 @@ def __attach_checkpoint_saving_if_needed(
     metric: str = "loss",
 ):
     def score_function(engine: Engine):
-        return engine.state.metrics[metric]
+        return -engine.state.metrics[metric]
 
     if parameters["n_save_checkpoints"] == 0:
         return
@@ -348,12 +393,18 @@ def __attach_checkpoint_saving_if_needed(
         score_name=metric,
         score_function=score_function,
         n_saved=parameters["n_save_checkpoints"],
+        greater_or_equal=True,
     )
     engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
 
 
 def __attach_save_model_if_needed(
-    engine: Engine, model: nn.Module, optimizer: Adam, loss: MSELoss, parameters: Dict
+    engine: Engine,
+    validator: Engine,
+    model: nn.Module,
+    optimizer: Adam,
+    loss: MSELoss,
+    parameters: Dict,
 ):
     def save_model(
         engine: Engine,
@@ -415,7 +466,7 @@ def __attach_save_model_if_needed(
         Events.COMPLETED,
         partial(
             log_metadata,
-            validator=engine,
+            validator=validator,
             parameters=parameters,
             path=f"{parameters['model_save_path']}/metadata.csv",
         ),
@@ -436,9 +487,13 @@ def __attach_terminate_on_nan(trainer: Engine):
     trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
 
 
-def __print_summary(model: Autoembedder, train_dataloader: DataLoader):
+def __print_summary(
+    model: Autoembedder, train_dataloader: DataLoader, parameters: Dict
+):
     batch_size = train_dataloader.batch_size
-    cat, cont = model_input(next(train_dataloader.dataset.df.itertuples(index=False)))
+    cat, cont = model_input(
+        next(train_dataloader.dataset.df.itertuples(index=False)), parameters
+    )
     if cat.shape[0] == 1:
         summary(model)
         return

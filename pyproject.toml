@@ -7,11 +7,11 @@ repository = "https://github.com/chrislemke/autoembedder"
 packages = [{ include = "autoembedder" }]
 
 [tool.poetry.dependencies]
-python = "3.10.4"
+python = "3.9.12"
 dask = "2022.5.0"
 pyarrow = "7.0.0"
 pandas = "1.4.2"
-torch = "1.11.0"
+torch = {url = "https://download.pytorch.org/whl/nightly/cpu/torch-1.13.0.dev20220523-cp39-none-macosx_11_0_arm64.whl"}
 torchvision = "0.12."
 torchinfo = "1.6.5"
 einops = "0.4.1"

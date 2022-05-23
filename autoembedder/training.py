@@ -21,10 +21,11 @@ from fps_ai.training.autoencoder.model import (
 def main():
     date = str(datetime.now()).replace(" ", "_").replace(":", "-")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--batch_size", type=int, required=False, default=64)
+    parser.add_argument("--batch_size", type=int, required=False, default=32)
     parser.add_argument("--drop_last", type=int, required=False, default=1)
     parser.add_argument("--pin_memory", type=int, required=False, default=1)
     parser.add_argument("--num_workers", type=int, required=False, default=0)
+    parser.add_argument("--no_mps", type=int, required=False, default=0)
     parser.add_argument(
         "--model_title", type=str, required=False, default=f"autoembedder_{date}.pt"
     )
@@ -42,6 +43,9 @@ def main():
         required=False,
         help="Path of the checkpoint to load.",
     )
+    parser.add_argument(
+        "--early_stopping_patience", type=int, required=False, default=0
+    )
     parser.add_argument("--lr_scheduler", type=int, required=False, default=1)
     parser.add_argument(
         "--scheduler_mode",
@@ -50,10 +54,11 @@ def main():
         default="min",
         choices=["min", "max"],
     )
-    parser.add_argument("--scheduler_patience", type=int, required=False, default=2)
+    parser.add_argument("--scheduler_patience", type=int, required=False, default=3)
 
-    parser.add_argument("--lr", type=float, required=False, default=0.0001)
-    parser.add_argument("--epochs", type=int, required=False, default=20)
+    parser.add_argument("--lr", type=float, required=False, default=0.001)
+    parser.add_argument("--amsgrad", type=int, required=False, default=0)
+    parser.add_argument("--epochs", type=int, required=False, default=30)
     parser.add_argument(
         "--layer_bias",
         type=int,
@@ -63,14 +68,14 @@ def main():
     )
     parser.add_argument("--weight_decay", type=float, required=False, default=0)
     parser.add_argument("--l1_lambda", type=float, required=False, default=0)
-    parser.add_argument("--xavier_init", type=int, required=False, default=1)
+    parser.add_argument("--xavier_init", type=int, required=False, default=0)
     parser.add_argument("--tensorboard_log_path", type=str, required=False)
     parser.add_argument("--use_tensorwatch", type=int, required=False, default=0)
     parser.add_argument(
         "--drop_cat_columns",
         type=int,
         required=False,
-        default=0,
+        default=1,
         help="If `1`, drop categorical columns from the datasets.",
     )
     parser.add_argument("--train_input_path", type=str, required=True)
@@ -111,7 +116,8 @@ def main():
 
 
 def __prepare_and_fit(parameters: Dict, model_params: Dict):
-    torch.set_default_tensor_type(torch.DoubleTensor)
+    if torch.backends.mps.is_available() is False or parameters["no_mps"] == 1:
+        torch.set_default_tensor_type(torch.DoubleTensor)
     train_dl = dataloader(parameters["train_input_path"], parameters)
     test_dl = dataloader(parameters["test_input_path"], parameters)
     num_continuous_cols = num_cont_columns(train_dl.dataset.df)  # type: ignore
