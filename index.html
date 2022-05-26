@@ -64,6 +64,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#the-autoembedder" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -93,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              The Autoembedder
             
           </span>
         </div>
@@ -224,22 +229,63 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="autoembedder/" class="md-nav__link">
+        The Autoembedder
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
     
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_1">
+        <label class="md-nav__link" for="__nav_2">
+          Code reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Code reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Code reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_1" type="checkbox" id="__nav_2_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_1">
           Autoembedder
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" aria-label="Autoembedder" data-md-level="1">
-        <label class="md-nav__title" for="__nav_1">
+      <nav class="md-nav" aria-label="Autoembedder" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_1">
           <span class="md-nav__icon md-icon"></span>
           Autoembedder
         </label>
@@ -334,6 +380,13 @@
     </li>
   
 
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
     
   </ul>
 </nav>
@@ -352,6 +405,37 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lets-get-started" class="md-nav__link">
+    Let's get started
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-additional-embedding-layers" class="md-nav__link">
+    Why additional embedding layers?
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -369,9 +453,186 @@
 
 
 
-  <h1>Home</h1>
-
+<h1 id="the-autoembedder">The Autoembedder<a class="headerlink" href="#the-autoembedder" title="Permanent link">&para;</a></h1>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
 <p>The Autoembedder is an autoencoder with additional embedding layers for the categorical columns. Its usage is flexible, and hyperparameters like the number of layers can be easily adjusted and tuned. Although primarily designed for Panda's dataframes, it can be easily modified to support other data structures.</p>
+<h2 id="lets-get-started">Let's get started<a class="headerlink" href="#lets-get-started" title="Permanent link">&para;</a></h2>
+<p><code>training.py</code> is where everything begins. The following arguments can / should be set:</p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default value</th>
+<th>Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>batch_size</td>
+<td>int</td>
+<td>False</td>
+<td>32</td>
+<td></td>
+</tr>
+<tr>
+<td>drop_last</td>
+<td>int</td>
+<td>False</td>
+<td>1</td>
+<td>True/False</td>
+</tr>
+<tr>
+<td>pin_memory</td>
+<td>int</td>
+<td>False</td>
+<td>1</td>
+<td>True/False</td>
+</tr>
+<tr>
+<td>num_workers</td>
+<td>int</td>
+<td>False</td>
+<td>0</td>
+<td>0 means that the data will be loaded in the main process</td>
+</tr>
+<tr>
+<td>use_mps</td>
+<td>int</td>
+<td>False</td>
+<td>0</td>
+<td>Set this to <code>1</code> if you want to use the <a href="https://pytorch.org/docs/master/notes/mps.html">MPS Backend</a> for running on Mac using the M1 GPU. process</td>
+</tr>
+<tr>
+<td>model_title</td>
+<td>str</td>
+<td>False</td>
+<td>autoembedder_{datetime}.bin</td>
+<td></td>
+</tr>
+<tr>
+<td>model_save_path</td>
+<td>str</td>
+<td>False</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>n_save_checkpoints</td>
+<td>int</td>
+<td>False</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>lr</td>
+<td>float</td>
+<td>False</td>
+<td>0.001</td>
+<td></td>
+</tr>
+<tr>
+<td>amsgrad</td>
+<td>int</td>
+<td>False</td>
+<td>0</td>
+<td>True/False</td>
+</tr>
+<tr>
+<td>epochs</td>
+<td>int</td>
+<td>True</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>layer_bias</td>
+<td>int</td>
+<td>False</td>
+<td>1</td>
+<td>True/False</td>
+</tr>
+<tr>
+<td>weight_decay</td>
+<td>float</td>
+<td>False</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>l1_lambda</td>
+<td>float</td>
+<td>False</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>xavier_init</td>
+<td>int</td>
+<td>False</td>
+<td>0</td>
+<td>True/False</td>
+</tr>
+<tr>
+<td>tensorboard_log_path</td>
+<td>str</td>
+<td>False</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>train_input_path</td>
+<td>str</td>
+<td>True</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>test_input_path</td>
+<td>str</td>
+<td>True</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>activation_for_code_layer</td>
+<td>int</td>
+<td>False</td>
+<td>0</td>
+<td>True/False, should the layer have an activation</td>
+</tr>
+<tr>
+<td>activation_for_final_decoder_layer</td>
+<td>int</td>
+<td>False</td>
+<td>0</td>
+<td>True/False, should the final decoder layer have an activation</td>
+</tr>
+<tr>
+<td>hidden_layer_representation</td>
+<td>str</td>
+<td>True</td>
+<td></td>
+<td>Contains a string representation of a list of list of integers which represents the hidden layer structure. E.g.: <code>"[[64, 32], [32, 16], [16, 8]]"</code> activation</td>
+</tr>
+<tr>
+<td>cat_columns</td>
+<td>str</td>
+<td>False</td>
+<td>"[]"</td>
+<td>Contains a string representation of a list of list of categorical columns (strings). The columns which use the same encoder should be together in a list. E.g.: <code>"[['a', 'b'], ['c']]"</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>So, something like this would do it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$ python3 training.py --epochs 20 \
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>--train_input_path &quot;path/to/your/train_data&quot; \
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>--test_input_path &quot;path/to/your/test_data&quot; \
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>--hidden_layer_representation &quot;[[12, 6], [6, 3]]&quot;
+</code></pre></div>
+<h2 id="why-additional-embedding-layers">Why additional embedding layers?<a class="headerlink" href="#why-additional-embedding-layers" title="Permanent link">&para;</a></h2>
+<p>The additional embedding layers automatically embed all columns with the Pandas <code>category</code> data type. If categorical columns have another data type, they will not be embedded and will be handled like the continuous columns. Simply encoding the categorical values (e.g., with the usage of a label encoder) decreases the quality of the outcome.</p>
 
               
             </article>
