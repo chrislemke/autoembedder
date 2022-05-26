@@ -57,10 +57,12 @@ plugins:
       watch:
         - autoembedder
 nav:
-  - Autoembedder:
-      - Training: autoembedder.training.md
-      - Learner: autoembedder.learner.md
-      - Data: autoembedder.data.md
-      - Model: autoembedder.model.md
-      - Evaluator: autoembedder.evaluator.md
-      - LR schedular: autoembedder.lr_schedular.md
+  - The Autoembedder: autoembedder.md
+  - Code reference:
+    - Autoembedder:
+        - Training: autoembedder.training.md
+        - Learner: autoembedder.learner.md
+        - Data: autoembedder.data.md
+        - Model: autoembedder.model.md
+        - Evaluator: autoembedder.evaluator.md
+        - LR schedular: autoembedder.lr_schedular.md
