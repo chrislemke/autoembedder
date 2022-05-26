@@ -15,14 +15,16 @@ def embedded_sizes_and_dims(
     train_df: dd.DataFrame, test_df: dd.DataFrame, col_collections: List[List[str]]
 ) -> List[Tuple[int, int]]:
     """
-    :param train_df: Training Dask DataFrame used to create the list of sizes and dimensions.
-    :param test_df: Validation Dask DataFrame used to create the list of sizes and dimensions. Both dataframes will be concatenated.
-    :param col_collections: A list of lists of strings. It must contain lists of columns which include same values.
-    :return: A list of tuples. Each tuple contains the number of values and the dimensions for the corresponding embedding layer.
-
     This method iterates over the columns of the dataframe. For every column it checks if the `col_collections` contains a list
     with additional columns. If this is the case the unique values are collected from both columns. Afterwards the values and
     dimensions are calculated.
+
+    Args:
+        train_df (dd.DataFrame): Training Dask DataFrame used to create the list of sizes and dimensions.
+        test_df (dd.DataFrame): Validation Dask DataFrame used to create the list of sizes and dimensions. Both dataframes will be concatenated.
+        col_collections (List[List[str]]): A list of lists of strings. It must contain lists of columns which include same values.
+    Returns:
+        List[Tuple[int, int]]: Each tuple contains the number of values and the dimensions for the corresponding embedding layer.
     """
     assert (
         train_df.columns == test_df.columns
@@ -47,19 +49,21 @@ def model_input(
     batch: NamedTuple, parameters: Dict
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
     """
-    :param batch: Batch provided by dataset.
-    :return: Tuple of `torch.Tensor`. The first item contains the categorical values, the second item the
-        continues values.
-
     Since the `Autoembedder` expects that the continues values and the categorical values are passed by
     different arguments this function splits the batch by type. It works with a batch of `torch.Tensor` and with floats
     and ints.
+
+    Args:
+        batch (NamedTuple): Batch provided by dataset.
+        parameters (Dict): Parameters for the model.
+    Returns:
+        Tuple[torch.Tensor, Optional[torch.Tensor]]: The first item contains the categorical values, the second item the continues values.
     """
     device = torch.device(
         "cuda"
         if torch.cuda.is_available()
         else "mps"
-        if torch.backends.mps.is_available() and parameters["no_mps"] == 0
+        if torch.backends.mps.is_available() and parameters["use_mps"] == 1
         else "cpu"
     )
     cat = []
@@ -72,7 +76,7 @@ def model_input(
                 if (
                     feature.dtype == torch.float64
                     and torch.backends.mps.is_available()
-                    and parameters["no_mps"] == 0
+                    and parameters["use_mps"] == 1
                 ):
                     feature = feature.to(torch.float32)
                 cont.append(feature)
@@ -104,14 +108,15 @@ class Autoembedder(nn.Module):
         config: Dict,
         num_cont_features: int,
         embedding_sizes: List[Tuple[int, int]],
-    ):
+    ) -> None:
         """
-        :param config: JSON config file for the model. When `hidden_layers` is not empty `num_hidden_layers` will be ignored. Otherwise the
-            number of units for the hidden layers will be calculated. `exponent_addition` are used in the `linear_layers` function.
-            Check the documentation below for more information.
-        :param num_cont_features: Number of continues features.
-        :param embedding_sizes: List of tuples.
-            Each tuple contains the size of the dictionary (unique values) of embeddings and the size of each embedding vector.
+        Args:
+            config (Dict): JSON config file for the model. When `hidden_layers` is not empty `num_hidden_layers` will be ignored. Otherwise the number of units for the hidden layers will be calculated. `exponent_addition` are used in the `linear_layers` function. Check the documentation below for more information.
+            num_cont_features (int): Number of continues features.
+            embedding_sizes (List[Tuple[int, int]]): List of tuples. Each tuple contains the size of the dictionary (unique values) of embeddings and the size of each embedding vector.
+
+        Returns:
+            None
         """
         super().__init__()
         print(f"Model config: {config}")
@@ -133,9 +138,11 @@ class Autoembedder(nn.Module):
 
     def forward(self, x_cat: torch.Tensor, x_cont: torch.Tensor) -> torch.Tensor:
         """
-        :param x_cat: Tensor including the categorical values. Shape: [columns count, batch size]
-        :param x_cont: Tensor including the continues values. Shape: [columns count, batch size]
-        :return: Tensor - output of the 'Autoembedder'. It contains the concatenated and processed continues and categorical data.
+        Args:
+            x_cat (torch.Tensor): Tensor including the categorical values. Shape: [columns count, batch size]
+            x_cont (torch.Tensor): Tensor including the continues values. Shape: [columns count, batch size]
+        Returns:
+            torch.Tensor :Output of the 'Autoembedder'. It contains the concatenated and processed continues and categorical data.
         """
 
         x_cont = rearrange(x_cont, "c r -> r c")
@@ -192,8 +199,10 @@ class Autoembedder(nn.Module):
         self, config: Dict, num_cont_features: int
     ) -> Tuple[nn.Module, nn.ModuleList, nn.ModuleList, nn.Module]:
         """
-        :param config: Configuration containing the hidden layer structure of the model.
-        :return: A tuple containing the linear layers.
+        Args:
+            config (Dict): Configuration containing the hidden layer structure of the model.
+        Returns:
+            A tuple containing the linear layers.
         """
 
         sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)  # type: ignore

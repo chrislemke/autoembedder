@@ -32,17 +32,32 @@ def fit(
     model: Autoembedder,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
-):
+) -> None:
+
+    """
+    This method is the general wrapper around the fitting process. It is preparing the optimizer, the loss function, the trainer,
+    the validator and the evaluator. Then it attaches everything to the corresponding engines and runs the training.
+
+    Args:
+        parameters (Dict): The parameters of the training process.
+        model (Autoembedder): The model to be trained.
+        train_dataloader (DataLoader): The dataloader for the training data.
+        test_dataloader (DataLoader): The dataloader for the test data.
+
+    Returns:
+        None
+    """
+
     model = model.to(
         torch.device(
             "cuda"
             if torch.cuda.is_available()
             else "mps"
-            if torch.backends.mps.is_available() and parameters["no_mps"] == 0
+            if torch.backends.mps.is_available() and parameters["use_mps"] == 1
             else "cpu"
         )
     )
-    if torch.backends.mps.is_available() is False or parameters["no_mps"] == 1:
+    if torch.backends.mps.is_available() is False or parameters["use_mps"] == 0:
         model = model.double()
 
     optimizer = Adam(
@@ -102,7 +117,7 @@ def fit(
                 "cuda"
                 if torch.cuda.is_available()
                 else "mps"
-                if torch.backends.mps.is_available() and parameters["no_mps"] == 0
+                if torch.backends.mps.is_available() and parameters["use_mps"] == 1
                 else "cpu"
             ),
         )
@@ -135,6 +150,25 @@ def __training_step(
     criterion: MSELoss,
     parameters: Dict,
 ) -> Union[np.float32, np.float64]:
+
+    """
+    Here the actual training step is performed. It is called by the training engine.
+    Not using [PyTorch ignite](https://github.com/pytorch/ignite)
+    this code would be wrapped in some kind of training loop over a range of epochs and batches.
+    But using ignite this is handled by the engine.
+
+    Args:
+        engine (Engine): The engine that is calling this method.
+        batch (NamedTuple): The batch that is passed to the engine for training.
+        model (Autoembedder): The model to be trained.
+        optimizer (torch.optim): The optimizer to be used for training.
+        criterion (torch.nn.MSELoss): The loss function to be used for training.
+        parameters (Dict): The parameters of the training process.
+
+    Returns:
+        Union[np.float32, np.float64]: The loss of the current batch.
+    """
+
     model.train()
     optimizer.zero_grad()
     cat, cont = model_input(batch, parameters)
@@ -158,6 +192,19 @@ def __validation_step(
     criterion: MSELoss,
     parameters: Dict,
 ) -> Union[np.float32, np.float64]:
+
+    """
+    Args:
+        engine (Engine): The engine that is calling this method.
+        batch (NamedTuple): The batch that is passed to the engine for validation.
+        model (Autoembedder): The model used for validation.
+        criterion (MSELoss): The loss function to be used for validation.
+        parameters (Dict): The parameters of the validation process.
+
+    Returns:
+        Union[np.float32, np.float64]: The loss of the current batch.
+    """
+
     model.eval()
     with torch.no_grad():
         cat, cont = model_input(batch, parameters)

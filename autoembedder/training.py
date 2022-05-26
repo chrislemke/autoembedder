@@ -14,14 +14,28 @@ from data import dataloader
 from model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
 
-def main():
+def main() -> None:
+
+    """
+    Main function for parsing arguments and start `__prepare_and_fit`.
+
+    Returns:
+        None
+
+    """
     date = str(datetime.now()).replace(" ", "_").replace(":", "-")
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", type=int, required=False, default=32)
     parser.add_argument("--drop_last", type=int, required=False, default=1)
     parser.add_argument("--pin_memory", type=int, required=False, default=1)
     parser.add_argument("--num_workers", type=int, required=False, default=0)
-    parser.add_argument("--no_mps", type=int, required=False, default=0)
+    parser.add_argument(
+        "--use_mps",
+        type=int,
+        required=False,
+        default=0,
+        help="Set this to `1` if you want to use the MPS Backend for running on Mac using the M1 GPU.",
+    )
     parser.add_argument(
         "--model_title", type=str, required=False, default=f"autoembedder_{date}.pt"
     )
@@ -38,9 +52,6 @@ def main():
         type=str,
         required=False,
         help="Path of the checkpoint to load.",
-    )
-    parser.add_argument(
-        "--early_stopping_patience", type=int, required=False, default=0
     )
     parser.add_argument("--lr_scheduler", type=int, required=False, default=1)
     parser.add_argument(
@@ -94,7 +105,7 @@ def main():
         help="""
         Contains a string representation of a list of list of categorical columns (strings).
         The columns which use the same encoder should be together in a list. E.g.: `"[['a', 'b'], ['c']]"`.
-        If you don't need or want to use categorical columns from your dataset you may consinder using: `--drop_cat_columns`.
+        If you don't need or want to use categorical columns from your dataset you may consider using: `--drop_cat_columns`.
         """,
     )
 
@@ -110,8 +121,21 @@ def main():
     __prepare_and_fit(vars(args), m_config)
 
 
-def __prepare_and_fit(parameters: Dict, model_params: Dict):
-    if torch.backends.mps.is_available() is False or parameters["no_mps"] == 1:
+def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
+
+    """
+    Prepares the data by creating a training and testing `dataloader`. `num_continuous_cols` is determined and passed to the
+    `Autoembedder` model for creating the needed layers.
+
+    Args:
+        parameters (Dict): Dictionary containing the parameters for the training, and creating the `dataloaders`.
+        model_params (Dict): Dictionary containing the model parameters.
+
+    Returns:
+        None
+    """
+
+    if torch.backends.mps.is_available() is False or parameters["use_mps"] == 0:
         torch.set_default_tensor_type(torch.DoubleTensor)
     train_dl = dataloader(parameters["train_input_path"], parameters)
     test_dl = dataloader(parameters["test_input_path"], parameters)
@@ -129,7 +153,22 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict):
     learner.fit(parameters, model, train_dl, test_dl)
 
 
-def __check_for_consistent_cat_rows(df: pd.DataFrame, cat_columns: List[List[str]]):
+def __check_for_consistent_cat_rows(
+    df: pd.DataFrame, cat_columns: List[List[str]]
+) -> None:
+
+    """
+    Checks if the categorical rows in the the dataframe (`df`) are consistent with the categorical columns (`cat_columns`).
+    This is needed so the is set up correctly. Please check the `--cat_columns` parameter for more information.
+
+    Args:
+        df (pd.DataFrame): The dataframe containing the categorical columns.
+        cat_columns (List[List[str]]): A list of lists representing the categorical columns which were encoded using the same encoder. E.g.: [['a', 'b'], ['c']]. Check the `--cat_columns` parameter for more information.
+
+    Returns:
+        None
+    """
+
     df_columns = df.select_dtypes(include="category").columns.to_list()
     cat_columns = list(itertools.chain(*cat_columns))
     assert set(df_columns) == set(

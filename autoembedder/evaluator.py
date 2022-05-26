@@ -13,11 +13,14 @@ from torch.nn import MSELoss
 
 def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, float]:
     """
-    :param _: Not in use. Needed by Pytorch-ignite.
-    :param __: Not in use. Needed by Pytorch-ignite.
-    :param model: Instance from the model used for prediction.
-    :param parameters: Dictionary with the parameters used for training and prediction.
-    :return: Tuple of loss deltas: `loss_mean_delta`, `loss_std_delta` and dataframe .
+    Args:
+        _ (None): Not in use. Needed by Pytorch-ignite.
+        __ (None): Not in use. Needed by Pytorch-ignite.
+        model (Autoembedder): Instance from the model used for prediction.
+        parameters (Dict): Dictionary with the parameters used for training and prediction.
+
+    Returns:
+        Tuple[float, float]: `loss_mean_delta`, `loss_std_delta` and dataframe .
     """
     df = dd.read_parquet(parameters["eval_input_path"], infer_divisions=True).compute()
     nf_df = df.query(f"{'is_fraud'} == 0").drop(["baseline_pred", "is_fraud"], axis=1)
@@ -44,6 +47,18 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, flo
 def __predict(
     model: Autoembedder, batch: NamedTuple, loss_fn: MSELoss, parameters: Dict
 ) -> float:
+
+    """
+    Args:
+        model (Autoembedder): Instance from the model used for prediction.
+        batch (NamedTuple): A batch of data.
+        loss_fn (MSELoss): Instance of the loss function.
+        parameters (Dict): Dictionary with the parameters used for evaluation.
+
+    Returns:
+        float: Loss value.
+    """
+
     with torch.no_grad():
         model.eval()
         cat, cont = model_input(batch, parameters)
