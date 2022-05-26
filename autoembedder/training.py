@@ -7,11 +7,12 @@ import itertools
 from datetime import datetime
 from typing import Dict, List
 
-import learner
 import pandas as pd
 import torch
-from data import dataloader
-from model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
+
+from autoembedder import learner
+from autoembedder.data import dataloader
+from autoembedder.model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
 
 def main() -> None:

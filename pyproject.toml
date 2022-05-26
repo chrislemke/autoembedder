@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Autoembedder"
-version = "1.0"
+version = "1.5"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
 authors = ["Chris Lemke"]
 repository = "https://github.com/chrislemke/autoembedder"
@@ -11,7 +11,10 @@ python = "3.9.12"
 dask = "2022.5.0"
 pyarrow = "7.0.0"
 pandas = "1.4.2"
-torch = {url = "https://download.pytorch.org/whl/nightly/cpu/torch-1.13.0.dev20220523-cp39-none-macosx_11_0_arm64.whl"}
+torch = [
+  {url = "https://download.pytorch.org/whl/nightly/cpu/torch-1.13.0.dev20220523%2Bcpu-cp39-cp39-linux_x86_64.whl", markers = "sys_platform == 'linux'"},
+  {url = "https://download.pytorch.org/whl/nightly/cpu/torch-1.13.0.dev20220523-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin'"}
+]
 torchvision = "0.12."
 torchinfo = "1.6.5"
 einops = "0.4.1"
@@ -19,6 +22,10 @@ tqdm = "4.64.0"
 tensorboard = "2.9.0"
 pytorch-ignite = "0.4.9"
 numpy = "1.22.3"
+mkdocs = "1.3.0"
+mkdocs-material = "8.2.15"
+mkdocstrings = ">=0.18.0"
+mkdocs-gen-files = "^0.3.4"
 
 
 [tool.poetry.dev-dependencies]

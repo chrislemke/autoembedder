@@ -9,20 +9,21 @@ from typing import Dict, NamedTuple, Union
 
 import numpy as np
 import torch
-from evaluator import loss_delta
 from ignite.contrib.handlers.tensorboard_logger import *  # pylint: disable=W0401,W0614
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.engine import Engine
 from ignite.engine.events import Events
 from ignite.handlers import Checkpoint, TerminateOnNan
 from ignite.metrics import RunningAverage
-from lr_schedular import ReduceLROnPlateauScheduler
-from model import Autoembedder, model_input
 from torch import nn
 from torch.nn import MSELoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchinfo import summary
+
+from autoembedder.evaluator import loss_delta
+from autoembedder.lr_schedular import ReduceLROnPlateauScheduler
+from autoembedder.model import Autoembedder, model_input
 
 date = datetime.now()
 

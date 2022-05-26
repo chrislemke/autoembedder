@@ -7,8 +7,9 @@ import dask.dataframe as dd
 import pandas as pd
 import torch
 from einops import rearrange
-from model import Autoembedder, model_input
 from torch.nn import MSELoss
+
+from autoembedder.model import Autoembedder, model_input
 
 
 def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, float]:

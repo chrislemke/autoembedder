@@ -1,0 +1,66 @@
+site_name: "Autoembedder"
+site_dir: public
+docs_dir: ./docs
+repo_url: https://github.com/chrislemke/autoembedder
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - meta
+  - tables
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      permalink: True
+theme:
+  icon:
+    repo: fontawesome/brands/github
+  name: material
+  language: en
+  features:
+    - navigation.tracking
+    - navigation.top
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: orange
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: white
+      accent: orange
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+extra:
+  generator: false
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          rendering:
+            show_root_heading: false
+      watch:
+        - autoembedder
+nav:
+  - Autoembedder:
+      - Training: autoembedder.training.md
+      - Learner: autoembedder.learner.md
+      - Data: autoembedder.data.md
+      - Model: autoembedder.model.md
+      - Evaluator: autoembedder.evaluator.md
+      - LR schedular: autoembedder.lr_schedular.md
