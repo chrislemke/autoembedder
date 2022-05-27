@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 autoembedder-venv
 .vscode
+public
