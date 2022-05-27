@@ -8,19 +8,19 @@
       
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.2.15">
     
     
       
-        <title>Autoembedder</title>
+        <title>Boosted autoencoder ensemble - Autoembedder</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.c382b1dc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.c382b1dc.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.cc9b2e1e.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cc9b2e1e.min.css">
         
       
     
@@ -35,9 +35,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,7 +65,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#the-autoembedder" class="md-skip">
+        <a href="#the-model" class="md-skip">
           Skip to content
         </a>
       
@@ -79,7 +79,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Autoembedder" class="md-header__button md-logo" aria-label="Autoembedder" data-md-component="logo">
+    <a href=".." title="Autoembedder" class="md-header__button md-logo" aria-label="Autoembedder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -98,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              The Autoembedder
+              Boosted autoencoder ensemble
             
           </span>
         </div>
@@ -199,7 +199,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Autoembedder" class="md-nav__button md-logo" aria-label="Autoembedder" data-md-component="logo">
+    <a href=".." title="Autoembedder" class="md-nav__button md-logo" aria-label="Autoembedder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -230,7 +230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder/" class="md-nav__link">
+      <a href="../autoembedder/" class="md-nav__link">
         The Autoembedder
       </a>
     </li>
@@ -243,11 +243,55 @@
 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="autoembedder.bae-docs/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Boosted autoencoder ensemble
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Boosted autoencoder ensemble
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-model" class="md-nav__link">
+    The model
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-learning-algorithm-and-its-parts" class="md-nav__link">
+    The learning algorithm and its parts
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -312,7 +356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder.training/" class="md-nav__link">
+      <a href="../autoembedder.training/" class="md-nav__link">
         Training
       </a>
     </li>
@@ -326,7 +370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder.learner/" class="md-nav__link">
+      <a href="../autoembedder.learner/" class="md-nav__link">
         Learner
       </a>
     </li>
@@ -340,7 +384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder.data/" class="md-nav__link">
+      <a href="../autoembedder.data/" class="md-nav__link">
         Data
       </a>
     </li>
@@ -354,7 +398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder.model/" class="md-nav__link">
+      <a href="../autoembedder.model/" class="md-nav__link">
         Model
       </a>
     </li>
@@ -368,7 +412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder.evaluator/" class="md-nav__link">
+      <a href="../autoembedder.evaluator/" class="md-nav__link">
         Evaluator
       </a>
     </li>
@@ -382,7 +426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="autoembedder.lr_schedular/" class="md-nav__link">
+      <a href="../autoembedder.lr_schedular/" class="md-nav__link">
         LR schedular
       </a>
     </li>
@@ -420,8 +464,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -430,22 +472,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
+  <a href="#the-model" class="md-nav__link">
+    The model
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#lets-get-started" class="md-nav__link">
-    Let's get started
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-additional-embedding-layers" class="md-nav__link">
-    Why additional embedding layers?
+  <a href="#the-learning-algorithm-and-its-parts" class="md-nav__link">
+    The learning algorithm and its parts
   </a>
   
 </li>
@@ -462,192 +497,31 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/chrislemke/autoembedder/edit/master/docs/index.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/chrislemke/autoembedder/edit/master/docs/autoembedder.bae-docs.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="the-autoembedder">The Autoembedder<a class="headerlink" href="#the-autoembedder" title="Permanent link">&para;</a></h1>
-<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
-<p>The Autoembedder is an autoencoder with additional embedding layers for the categorical columns. Its usage is flexible, and hyperparameters like the number of layers can be easily adjusted and tuned. Although primarily designed for Panda's dataframes, it can be easily modified to support other data structures.</p>
-<h2 id="lets-get-started">Let's get started<a class="headerlink" href="#lets-get-started" title="Permanent link">&para;</a></h2>
-<p><code>training.py</code> is where everything begins. The following arguments can / should be set:</p>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default value</th>
-<th>Comment</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>batch_size</td>
-<td>int</td>
-<td>False</td>
-<td>32</td>
-<td></td>
-</tr>
-<tr>
-<td>drop_last</td>
-<td>int</td>
-<td>False</td>
-<td>1</td>
-<td>True/False</td>
-</tr>
-<tr>
-<td>pin_memory</td>
-<td>int</td>
-<td>False</td>
-<td>1</td>
-<td>True/False</td>
-</tr>
-<tr>
-<td>num_workers</td>
-<td>int</td>
-<td>False</td>
-<td>0</td>
-<td>0 means that the data will be loaded in the main process</td>
-</tr>
-<tr>
-<td>use_mps</td>
-<td>int</td>
-<td>False</td>
-<td>0</td>
-<td>Set this to <code>1</code> if you want to use the <a href="https://pytorch.org/docs/master/notes/mps.html">MPS Backend</a> for running on Mac using the M1 GPU. process</td>
-</tr>
-<tr>
-<td>model_title</td>
-<td>str</td>
-<td>False</td>
-<td>autoembedder_{datetime}.bin</td>
-<td></td>
-</tr>
-<tr>
-<td>model_save_path</td>
-<td>str</td>
-<td>False</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>n_save_checkpoints</td>
-<td>int</td>
-<td>False</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>lr</td>
-<td>float</td>
-<td>False</td>
-<td>0.001</td>
-<td></td>
-</tr>
-<tr>
-<td>amsgrad</td>
-<td>int</td>
-<td>False</td>
-<td>0</td>
-<td>True/False</td>
-</tr>
-<tr>
-<td>epochs</td>
-<td>int</td>
-<td>True</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>layer_bias</td>
-<td>int</td>
-<td>False</td>
-<td>1</td>
-<td>True/False</td>
-</tr>
-<tr>
-<td>weight_decay</td>
-<td>float</td>
-<td>False</td>
-<td>0</td>
-<td></td>
-</tr>
-<tr>
-<td>l1_lambda</td>
-<td>float</td>
-<td>False</td>
-<td>0</td>
-<td></td>
-</tr>
-<tr>
-<td>xavier_init</td>
-<td>int</td>
-<td>False</td>
-<td>0</td>
-<td>True/False</td>
-</tr>
-<tr>
-<td>tensorboard_log_path</td>
-<td>str</td>
-<td>False</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>train_input_path</td>
-<td>str</td>
-<td>True</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>test_input_path</td>
-<td>str</td>
-<td>True</td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>activation_for_code_layer</td>
-<td>int</td>
-<td>False</td>
-<td>0</td>
-<td>True/False, should the layer have an activation</td>
-</tr>
-<tr>
-<td>activation_for_final_decoder_layer</td>
-<td>int</td>
-<td>False</td>
-<td>0</td>
-<td>True/False, should the final decoder layer have an activation</td>
-</tr>
-<tr>
-<td>hidden_layer_representation</td>
-<td>str</td>
-<td>True</td>
-<td></td>
-<td>Contains a string representation of a list of list of integers which represents the hidden layer structure. E.g.: <code>"[[64, 32], [32, 16], [16, 8]]"</code> activation</td>
-</tr>
-<tr>
-<td>cat_columns</td>
-<td>str</td>
-<td>False</td>
-<td>"[]"</td>
-<td>Contains a string representation of a list of list of categorical columns (strings). The columns which use the same encoder should be together in a list. E.g.: <code>"[['a', 'b'], ['c']]"</code>.</td>
-</tr>
-</tbody>
-</table>
-<p>So, something like this would do it:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$ python3 training.py --epochs 20 \
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>--train_input_path &quot;path/to/your/train_data&quot; \
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>--test_input_path &quot;path/to/your/test_data&quot; \
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>--hidden_layer_representation &quot;[[12, 6], [6, 3]]&quot;
-</code></pre></div>
-<h2 id="why-additional-embedding-layers">Why additional embedding layers?<a class="headerlink" href="#why-additional-embedding-layers" title="Permanent link">&para;</a></h2>
-<p>The additional embedding layers automatically embed all columns with the Pandas <code>category</code> data type. If categorical columns have another data type, they will not be embedded and will be handled like the continuous columns. Simply encoding the categorical values (e.g., with the usage of a label encoder) decreases the quality of the outcome.</p>
+  <h1>Boosted autoencoder ensemble</h1>
+
+<h2 id="the-model">The model<a class="headerlink" href="#the-model" title="Permanent link">&para;</a></h2>
+<p>What the BAE and the vanilla autoencoder have in common is the model's architecture. Usually, when implementing the BAE no changes needs to be made. That is since the BAE handles the autoencoder as a weak learner by itself.</p>
+<h2 id="the-learning-algorithm-and-its-parts">The learning algorithm and its parts<a class="headerlink" href="#the-learning-algorithm-and-its-parts" title="Permanent link">&para;</a></h2>
+<p>The idea of boosting in the sense of a Boosting autoencoder ensemble is as based on having an altered learning algorithm. Besides the classical parts of the learning algorithm, for example, backpropagation or calculating the loss, some additional steps need to be implemented. Through the learning process - in each iteration (<span class="arithmatex">\(i\)</span>), instances of the sampled dataset get created using a probability function <span class="arithmatex">\(\mathbb{P}^{(i)}\)</span>. The function is based on the reconstruction error from original dataset (<span class="arithmatex">\(X^{(0)}\)</span>) of the previous iteration. The dataset <span class="arithmatex">\(X^{(i)}\)</span> should contain fewer outliers than the <span class="arithmatex">\(X^{(i-1)}\)</span>. This is going to be archived by assigning weights to the datasets entries, so that entries with a higher reconstruction error have a lower probability of being sampled.</p>
+<p>Probability function:<br>
+<span class="arithmatex">\(\mathbb{P}^{(i+1)}_{x} = \frac{1/e^{(i)}_x}{\sum{1/e^{(i)}_x}}\)</span></p>
+<p>Reconstruction error:<br>
+<span class="arithmatex">\(e^{(i)}_x = (\left\lVert x-AE^{(i)}(x) \right\rVert_2)^2\)</span><br>
+The difference to the reconstruction error of the vanilla AE is the iterations (<span class="arithmatex">\(i\)</span>) factor as well as the L2-norm within this function.</p>
+<p>According to the <span class="arithmatex">\(\mathbb{P}^{(i)}\)</span> <span class="arithmatex">\(X^{(i+1)}\)</span> contains less outliers than <span class="arithmatex">\(X^{(i)}\)</span> and therefore the learning process concentrates the inliers and the outlier get lower impact on the model.</p>
+<p>Savari et al. define one advantage of the BAE with the capability for a weighted consensus. The different components archive though the iterations an "agreement" between the weak learners. It is important to mention that - to follow the idea of boosting - several autoencoders are used improve the performance achieved by a single autoencoder (the first iteration).</p>
+<p>Since the BAE is about boosting, the algorithm is split into two parts: the training phase and the consensus phase. In the boosting phase, the AE is trained with <span class="arithmatex">\(X^{(i)}\)</span> - the sampled view of <span class="arithmatex">\(X^{(0)}\)</span>. This step is not different from the training of the vanilla AE. After this we proceed by sampling <span class="arithmatex">\(X^{(i+1)}\)</span> with the entries whose reconstruction error is lower. The sampling process used <span class="arithmatex">\(X^{(0)}\)</span> and the probability function <span class="arithmatex">\(\mathbb{P}\)</span> to create a new dataset. This training phase is repeated for all components of the BAE ensemble.<br>
+In the consensus phase we use the the following function to calculate the weights:</p>
+<p><span class="arithmatex">\(w^{(i)}=\frac{1/\sum\limits_{x\in X} e^{(i)}_x}{\sum\limits_{i=1}^{m-1}(1/\sum\limits_{x\in X^{(i)}}e^{i}_x)}\)</span><br></p>
+<p>Those weights are used to calculate the outlier score for each <span class="arithmatex">\(x\)</span>:</p>
+<p><span class="arithmatex">\(\bar e_x=\sum\limits^{m-1}_{i=1}w^{(i)}e_x^{(i)}\)</span><br></p>
+<p><span class="arithmatex">\(\bar e_x\)</span> is than assigned to each <span class="arithmatex">\(x \in X^{(0)}\)</span>.</p>
 
               
             </article>
@@ -662,6 +536,41 @@
       </main>
       
         <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../autoembedder/" class="md-footer__link md-footer__link--prev" aria-label="Previous: The Autoembedder" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              The Autoembedder
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../autoembedder.training/" class="md-footer__link md-footer__link--next" aria-label="Next: Training" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Training
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
@@ -678,12 +587,12 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tracking", "navigation.top"], "search": "assets/javascripts/workers/search.2a1c317c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tracking", "navigation.top"], "search": "../assets/javascripts/workers/search.2a1c317c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.a6c66575.min.js"></script>
+      <script src="../assets/javascripts/bundle.a6c66575.min.js"></script>
       
-        <script src="javascripts/mathjax.js"></script>
+        <script src="../javascripts/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
