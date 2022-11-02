@@ -131,3 +131,4 @@ autoembedder-venv
 .vscode
 public
 None
+logs

@@ -22,21 +22,28 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, flo
     Returns:
         Tuple[float, float]: `loss_mean_delta`, `loss_std_delta` and dataframe .
     """
-    df = dd.read_parquet(parameters["eval_input_path"], infer_divisions=True).compute()
-    nf_df = df.query(f"{'is_fraud'} == 0").drop(["baseline_pred", "is_fraud"], axis=1)
-    f_df = df.query(f"{'is_fraud'} == 1").drop(["baseline_pred", "is_fraud"], axis=1)
+    target = parameters["target"]
+    df = (
+        dd.read_parquet(parameters["eval_input_path"], infer_divisions=True)
+        .compute()
+        .sample(frac=1)
+        .reset_index(drop=True)
+    )
+    df_0 = df.query(f"{target} == 0").drop([target], axis=1)
+    df_1 = df.query(f"{target} == 1").drop([target], axis=1)
 
-    nf_df = nf_df.head(f_df.shape[0])
-    f_df = f_df.head(f_df.shape[0])
-    nf_losses: List[float] = []
-    f_losses: List[float] = []
+    df_0 = df_0.head(df_1.shape[0])
+    df_1 = df_1.head(df_1.shape[0])
+    losses_0: List[float] = []
+    losses_1: List[float] = []
 
-    for df, losses in [(nf_df, nf_losses), (f_df, f_losses)]:
-        loss = MSELoss()
-        for batch in df.itertuples(index=False):
-            losses.append(__predict(model, batch, loss, parameters))
+    loss = MSELoss()
+    for batch in df_0.itertuples(index=False):
+        losses_0.append(__predict(model, batch, loss, parameters))
+    for batch in df_1.itertuples(index=False):
+        losses_1.append(__predict(model, batch, loss, parameters))
 
-    df = pd.DataFrame(zip(nf_losses, f_losses), columns=["no_fraud_loss", "fraud_loss"])
+    df = pd.DataFrame(zip(losses_0, losses_1), columns=["loss_0", "loss_1"])
     df_mean = df.mean(axis=0)
     df_median = df.median(axis=0)
     mean_loss_delta = df_mean[1] - df_mean[0]
