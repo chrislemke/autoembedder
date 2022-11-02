@@ -1,4 +1,13 @@
 # The Autoembedder
+[![deploy package](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml/badge.svg)](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml)
+[![pypi](https://img.shields.io/pypi/v/autoembedder)](https://pypi.org/project/autoembedder/)
+![python version](https://img.shields.io/pypi/pyversions/autoembedder?logo=python&logoColor=yellow)
+[![docs](https://img.shields.io/badge/docs-mkdoks%20material-blue)](https://chrislemke.github.io/autoembedder/)
+[![license](https://img.shields.io/github/license/chrislemke/autoembedder)](https://github.com/chrislemke/autoembedder/blob/main/LICENSE)
+[![mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
+[![black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 ## Introduction
 The Autoembedder is an autoencoder with additional embedding layers for the categorical columns. Its usage is flexible, and hyperparameters like the number of layers can be easily adjusted and tuned. Although primarily designed for Panda's dataframes, it can be easily modified to support other data structures.
 

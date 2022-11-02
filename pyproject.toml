@@ -1,10 +1,12 @@
 [tool.poetry]
 name = "Autoembedder"
-version = "1.5"
+version = "0.1.1"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
 authors = ["Christopher Lemke <chris@syhbl.mozmail.com>"]
 license = "MIT"
 readme = "docs/README.md"
+homepage = "https://chrislemke.github.io/autoembedder/"
+documentation = "https://chrislemke.github.io/autoembedder/"
 repository = "https://github.com/chrislemke/autoembedder"
 packages = [{ include = "autoembedder" }]
 classifiers = [

@@ -1,0 +1,17 @@
+name: DeployPackage
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: deploy-package
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.10
+      - run: pip install poetry==1.2.2
+      - run: poetry config pypi-token.pypi ${{ secrets.AUTOEMBEDDER_UPLOAD_TOKEN }}
+      - run: poetry publish --build
