@@ -1,3 +1,4 @@
+![The autoembedder](https://raw.githubusercontent.com/chrislemke/autoembedder/master/docs/assets/images/image.png)
 # The Autoembedder
 [![deploy package](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml/badge.svg)](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml)
 [![pypi](https://img.shields.io/pypi/v/autoembedder)](https://pypi.org/project/autoembedder/)
