@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from typing import Dict, List, NamedTuple, Optional, Tuple
@@ -154,7 +153,7 @@ class Autoembedder(nn.Module):
                 x_emb.append(layer(value))
             except IndexError:
                 value = max(value.tolist())
-                raise IndexError(
+                raise IndexError(  # pylint: disable=W0707
                     f"""
                 There seems to be a problem with the index of the embedding layer: `index out of range in self`. The `num_embeddings`
                 of the {i}. layer is {layer.num_embeddings}. The maximum value which should be embedded from the tensor is {value}.
@@ -167,8 +166,8 @@ class Autoembedder(nn.Module):
                 """
                 )
         if self.embeddings:
-            x_emb = torch.cat(x_emb, 1)  # type: ignore
-            x = torch.cat([x_cont, x_emb], 1)  # type: ignore
+            x_emb = torch.cat(x_emb, 1)
+            x = torch.cat([x_cont, x_emb], 1)
         else:
             x = x_cont
         self.last_target = (
@@ -179,7 +178,7 @@ class Autoembedder(nn.Module):
         self.code_value = x.clone().detach()  # Stores the values of the code layer.
         return self.__decode(x)
 
-    def init_xavier_weights(self):
+    def init_xavier_weights(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
@@ -205,7 +204,7 @@ class Autoembedder(nn.Module):
             A tuple containing the linear layers.
         """
 
-        sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)  # type: ignore
+        sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)
         in_features = num_cont_features + sum_emb_dims
 
         hl = config["hidden_layers"]

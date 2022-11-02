@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # pylint: disable=W0613
 
@@ -9,7 +8,15 @@ from typing import Dict, NamedTuple, Union
 
 import numpy as np
 import torch
-from ignite.contrib.handlers.tensorboard_logger import *  # pylint: disable=W0401,W0614
+from ignite.contrib.handlers.tensorboard_logger import (
+    GradsHistHandler,
+    GradsScalarHandler,
+    OptimizerParamsHandler,
+    TensorboardLogger,
+    WeightsHistHandler,
+    WeightsScalarHandler,
+    global_step_from_engine,
+)
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 from ignite.engine import Engine
 from ignite.engine.events import Events
@@ -214,15 +221,17 @@ def __validation_step(
     return val_loss.item()
 
 
-def __attach_progress_bar(trainer: Engine):
+def __attach_progress_bar(trainer: Engine) -> None:
     RunningAverage(output_transform=lambda x: x).attach(trainer, "loss")
     ProgressBar(True).attach(trainer, ["loss"])
 
 
 def __attach_validation(
     trainer: Engine, validator: Engine, test_dataloader: DataLoader
-):
-    def run_validator(trainer: Engine, validator: Engine, dataloader: DataLoader):
+) -> None:
+    def run_validator(
+        trainer: Engine, validator: Engine, dataloader: DataLoader
+    ) -> None:
         validator.run(
             dataloader,
             epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
@@ -239,8 +248,12 @@ def __attach_validation(
     )
 
 
-def __attach_evaluation(trainer: Engine, evaluator: Engine, dataloader: DataLoader):
-    def run_evaluator(trainer: Engine, evaluator: Engine, dataloader: DataLoader):
+def __attach_evaluation(
+    trainer: Engine, evaluator: Engine, dataloader: DataLoader
+) -> None:
+    def run_evaluator(
+        trainer: Engine, evaluator: Engine, dataloader: DataLoader
+    ) -> None:
         evaluator.run(
             dataloader,
             epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
@@ -263,7 +276,9 @@ def __attach_evaluation(trainer: Engine, evaluator: Engine, dataloader: DataLoad
     )
 
 
-def __attach_scheduler_if_needed(engine: Engine, optimizer: Adam, parameters: Dict):
+def __attach_scheduler_if_needed(
+    engine: Engine, optimizer: Adam, parameters: Dict
+) -> None:
     if parameters["lr_scheduler"] == 0 or parameters["scheduler_patience"] < 0:
         return
 
@@ -284,7 +299,7 @@ def __attach_tb_logger_if_needed(
     model: Autoembedder,
     optimizer: Adam,
     parameters: Dict,
-):
+) -> None:
     if parameters["tensorboard_log_path"] is None:
         return
 
@@ -352,13 +367,13 @@ def __attach_tb_teardown_if_needed(
     validator: Engine,
     evaluator: Engine,
     parameters: Dict,
-):
+) -> None:
     def teardown_tb_logger(
         trainer: Engine,
         validator: Engine,
         tb_logger: TensorboardLogger,
         parameters: Dict,
-    ):
+    ) -> None:
         metrics = {
             "hparam/train_loss": trainer.state.metrics["loss"],
             "hparam/val_loss": validator.state.metrics["loss"],
@@ -400,8 +415,8 @@ def __attach_checkpoint_saving_if_needed(
     optimizer: Adam,
     parameters: Dict,
     metric: str = "loss",
-):
-    def score_function(engine: Engine):
+) -> None:
+    def score_function(engine: Engine) -> float:
         return -engine.state.metrics[metric]
 
     if parameters["n_save_checkpoints"] == 0:
@@ -420,88 +435,13 @@ def __attach_checkpoint_saving_if_needed(
     engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
 
 
-def __attach_save_model_if_needed(
-    engine: Engine,
-    validator: Engine,
-    model: nn.Module,
-    optimizer: Adam,
-    loss: MSELoss,
-    parameters: Dict,
-):
-    def save_model(
-        engine: Engine,
-        model: nn.Module,
-        optimizer: Adam,
-        loss: MSELoss,
-        parameters: Dict,
-        path: str,
-    ):
-        torch.save(
-            {
-                "epoch": engine.state.epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "loss": loss,
-            },
-            f"{path}/{parameters['model_title']}",
-        )
-        torch.save(
-            model.state_dict(),
-            f"{path}/{parameters['model_title']}".replace(".pt", ".bin"),
-        )
-
-    def log_metadata(
-        engine: Engine,
-        validator: Engine,
-        parameters: dict,
-        path: str,
-    ):
-        metadata = {
-            "training_loss": engine.state.metrics["loss"],
-            "validation_loss": validator.state.metrics["loss"],
-        }
-        metadata.update(parameters)
-        store_metadata(path, metadata)
-
-    if parameters["model_save_path"] is None:
-        return
-
-    model_save_path = (
-        f"{parameters['model_save_path']}/{parameters['model_title']}".replace(
-            ".bin", ""
-        ).replace(".pt", "")
-    )
-    Path(model_save_path).mkdir(parents=True, exist_ok=True)
-
-    engine.add_event_handler(
-        Events.COMPLETED,
-        partial(
-            save_model,
-            model=model,
-            optimizer=optimizer,
-            loss=loss,
-            parameters=parameters,
-            path=model_save_path,
-        ),
-    )
-    engine.add_event_handler(
-        Events.COMPLETED,
-        partial(
-            log_metadata,
-            validator=validator,
-            parameters=parameters,
-            path=f"{parameters['model_save_path']}/metadata.csv",
-        ),
-    )
-
-
-def __attach_terminate_on_nan(trainer: Engine):
+def __attach_terminate_on_nan(trainer: Engine) -> None:
     trainer.add_event_handler(Events.ITERATION_COMPLETED, TerminateOnNan())
 
 
 def __print_summary(
     model: Autoembedder, train_dataloader: DataLoader, parameters: Dict
-):
+) -> None:
     batch_size = train_dataloader.batch_size
     cat, cont = model_input(
         next(train_dataloader.dataset.df.itertuples(index=False)), parameters
@@ -509,4 +449,4 @@ def __print_summary(
     if cat.shape[0] == 1:
         summary(model)
         return
-    summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])  # type: ignore
+    summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])

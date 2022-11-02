@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from typing import Dict
+from typing import Any, Dict
 
 import dask.dataframe as dd
 from torch.utils.data import DataLoader, IterableDataset
@@ -24,10 +23,10 @@ class Dataset(IterableDataset):
                 self.df.columns[self.df.dtypes == "category"], axis=1
             )
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         return self.df.itertuples(index=False)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> None:
         raise NotImplementedError
 
 

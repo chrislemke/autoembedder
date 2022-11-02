@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse
 import ast
 import itertools
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, Iterable, List
 
 import pandas as pd
 import torch
@@ -138,9 +137,10 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
 
     if torch.backends.mps.is_available() is False or parameters["use_mps"] == 0:
         torch.set_default_tensor_type(torch.DoubleTensor)
+
     train_dl = dataloader(parameters["train_input_path"], parameters)
     test_dl = dataloader(parameters["test_input_path"], parameters)
-    num_continuous_cols = num_cont_columns(train_dl.dataset.df)  # type: ignore
+    num_continuous_cols = num_cont_columns(train_dl.dataset.df)
     __check_for_consistent_cat_rows(
         train_dl.dataset.df, ast.literal_eval(parameters["cat_columns"])
     )
@@ -148,14 +148,14 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
         train_dl.dataset.df,
         test_dl.dataset.df,
         ast.literal_eval(parameters["cat_columns"]),
-    )  # type: ignore
+    )
     model = Autoembedder(model_params, num_continuous_cols, embedded_sizes)
 
     learner.fit(parameters, model, train_dl, test_dl)
 
 
 def __check_for_consistent_cat_rows(
-    df: pd.DataFrame, cat_columns: List[List[str]]
+    df: pd.DataFrame, cat_columns: Iterable[List[str]]
 ) -> None:
 
     """
@@ -171,7 +171,7 @@ def __check_for_consistent_cat_rows(
     """
 
     df_columns = df.select_dtypes(include="category").columns.to_list()
-    cat_columns = list(itertools.chain(*cat_columns))
+    cat_columns = list(itertools.chain(*cat_columns))  # type: ignore
     assert set(df_columns) == set(
         cat_columns
     ), f"""

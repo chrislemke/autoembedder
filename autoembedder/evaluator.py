@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from typing import Dict, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 
 import dask.dataframe as dd
 import pandas as pd
@@ -12,7 +11,7 @@ from torch.nn import MSELoss
 from autoembedder.model import Autoembedder, model_input
 
 
-def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, float]:
+def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, float]:  # type: ignore
     """
     Args:
         _ (None): Not in use. Needed by Pytorch-ignite.
@@ -29,8 +28,8 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, flo
 
     nf_df = nf_df.head(f_df.shape[0])
     f_df = f_df.head(f_df.shape[0])
-    nf_losses = []
-    f_losses = []
+    nf_losses: List[float] = []
+    f_losses: List[float] = []
 
     for df, losses in [(nf_df, nf_losses), (f_df, f_losses)]:
         loss = MSELoss()

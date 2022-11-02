@@ -1,25 +1,27 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from typing import Optional
 
+import torch
+from ignite.engine import Engine
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class ReduceLROnPlateauScheduler:
     def __init__(
         self,
-        optimizer,
-        metric_name,
-        mode="min",
-        factor=0.1,
-        patience=10,
-        threshold=1e-4,
-        threshold_mode="rel",
-        cooldown=0,
-        min_lr=0,
-        eps=1e-8,
-        verbose=False,
-    ):
+        optimizer: torch.optim.Adam,
+        metric_name: str,
+        mode: str = "min",
+        factor: float = 0.1,
+        patience: int = 10,
+        threshold: float = 1e-4,
+        threshold_mode: str = "rel",
+        cooldown: int = 0,
+        min_lr: float = 0,
+        eps: float = 1e-8,
+        verbose: bool = False,
+    ) -> None:
         """
 
         Reduce learning rate when a metric has stopped improving.
@@ -58,8 +60,8 @@ class ReduceLROnPlateauScheduler:
             verbose=verbose,
         )
 
-    def __call__(self, engine, name=None):
-        self.scheduler.step(engine.state.metrics[self.metric_name])
+    def __call__(self, ignite_engine: Engine, name: Optional[str] = None) -> None:
+        self.scheduler.step(ignite_engine.state.metrics[self.metric_name])
 
-    def state_dict(self):
+    def state_dict(self) -> dict:
         return self.scheduler.state_dict()
