@@ -125,6 +125,7 @@ class Autoembedder(nn.Module):
         self.last_target: Optional[torch.Tensor] = None
         self.code_value: Optional[torch.Tensor] = None
         self.relu = torch.nn.ReLU()
+        self.tanh = torch.nn.Tanh()
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
@@ -186,15 +187,15 @@ class Autoembedder(nn.Module):
                 nn.init.xavier_normal_(m.weight)
 
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.relu(self.encoder_input(x))
+        x = self.tanh(self.encoder_input(x))
         for layer in self.encoder_hidden_layers:
-            x = self.relu(layer(x))
+            x = self.tanh(layer(x))
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.decoder_hidden_layers:
-            x = self.relu(layer(x))
-        return self.relu(self.decoder_output(x))
+            x = self.tanh(layer(x))
+        return self.decoder_output(x)
 
     def __linear_layers(
         self, config: Dict, num_cont_features: int
