@@ -28,7 +28,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
-from autoembedder.evaluator import loss_delta
+from autoembedder.evaluator import loss_diff
 from autoembedder.lr_schedular import ReduceLROnPlateauScheduler
 from autoembedder.model import Autoembedder, model_input
 
@@ -99,7 +99,7 @@ def fit(
             __validation_step, model=model, criterion=criterion, parameters=parameters
         )
     )
-    evaluator = Engine(partial(loss_delta, model=model, parameters=parameters))
+    evaluator = Engine(partial(loss_diff, model=model, parameters=parameters))
 
     __print_summary(model, train_dataloader, parameters)
     __attach_scheduler_if_needed(validator, optimizer, parameters)
@@ -110,7 +110,7 @@ def fit(
     __attach_terminate_on_nan(trainer)
     __attach_validation(trainer, validator, test_dataloader)
 
-    if parameters["eval_input_path"]:
+    if parameters["eval_input_path"] and parameters["target"]:
         __attach_evaluation(trainer, evaluator, test_dataloader)
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
@@ -260,15 +260,15 @@ def __attach_evaluation(
             max_epochs=1,
         )
         ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss delta: {evaluator.state.metrics['mean_loss_delta']:.7f}"
+            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss diff: {evaluator.state.metrics['mean_loss_diff']:.7f}"
         )
         ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss delta: {evaluator.state.metrics['median_loss_delta']:.7f}"
+            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss diff: {evaluator.state.metrics['median_loss_diff']:.7f}"
         )  # pylint: disable=C0301
 
-    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_delta")
+    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_diff")
     RunningAverage(output_transform=lambda x: x[1]).attach(
-        evaluator, "median_loss_delta"
+        evaluator, "median_loss_diff"
     )
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED,
@@ -325,15 +325,15 @@ def __attach_tb_logger_if_needed(
     tb_logger.attach_output_handler(
         evaluator,
         event_name=Events.EPOCH_COMPLETED,
-        tag="loss_delta",
-        metric_names=["mean_loss_delta"],
+        tag="loss_diff",
+        metric_names=["mean_loss_diff"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach_output_handler(
         evaluator,
         event_name=Events.EPOCH_COMPLETED,
-        tag="loss_delta",
-        metric_names=["median_loss_delta"],
+        tag="loss_diff",
+        metric_names=["median_loss_diff"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach(
@@ -379,11 +379,11 @@ def __attach_tb_teardown_if_needed(
             "hparam/val_loss": validator.state.metrics["loss"],
         }
         if parameters["eval_input_path"]:
-            metrics["hparam/mean_loss_delta"] = evaluator.state.metrics[
-                "median_loss_delta"
+            metrics["hparam/mean_loss_diff"] = evaluator.state.metrics[
+                "median_loss_diff"
             ]
-            metrics["hparam/median_loss_delta"] = evaluator.state.metrics[
-                "median_loss_delta"
+            metrics["hparam/median_loss_diff"] = evaluator.state.metrics[
+                "median_loss_diff"
             ]
 
         tb_logger.writer.add_hparams(

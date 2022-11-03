@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from einops import rearrange
 from torch import nn
-from torch.nn.utils.parametrizations import orthogonal
 
 
 def embedded_sizes_and_dims(
@@ -110,9 +109,12 @@ class Autoembedder(nn.Module):
     ) -> None:
         """
         Args:
-            config (Dict): JSON config file for the model. When `hidden_layers` is not empty `num_hidden_layers` will be ignored. Otherwise the number of units for the hidden layers will be calculated. `exponent_addition` are used in the `linear_layers` function. Check the documentation below for more information.
+            config (Dict): Configuration for the model. When `hidden_layers` is not empty `num_hidden_layers` will be ignored.
+                Otherwise the number of units for the hidden layers will be calculated. `exponent_addition` are used in the `linear_layers` function.
+                Check the documentation below for more information.
             num_cont_features (int): Number of continues features.
-            embedding_sizes (List[Tuple[int, int]]): List of tuples. Each tuple contains the size of the dictionary (unique values) of embeddings and the size of each embedding vector.
+            embedding_sizes (List[Tuple[int, int]]): List of tuples.
+                Each tuple contains the size of the dictionary (unique values) of embeddings and the size of each embedding vector.
 
         Returns:
             None
@@ -122,7 +124,7 @@ class Autoembedder(nn.Module):
 
         self.last_target: Optional[torch.Tensor] = None
         self.code_value: Optional[torch.Tensor] = None
-        self.leaky_relu = torch.nn.LeakyReLU(0.1)
+        self.relu = torch.nn.ReLU()
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
@@ -184,15 +186,15 @@ class Autoembedder(nn.Module):
                 nn.init.xavier_normal_(m.weight)
 
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.leaky_relu(self.encoder_input(x))
+        x = self.relu(self.encoder_input(x))
         for layer in self.encoder_hidden_layers:
-            x = self.leaky_relu(layer(x))
+            x = self.relu(layer(x))
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.decoder_hidden_layers:
-            x = self.leaky_relu(layer(x))
-        return self.leaky_relu(self.decoder_output(x))
+            x = self.relu(layer(x))
+        return self.relu(self.decoder_output(x))
 
     def __linear_layers(
         self, config: Dict, num_cont_features: int
@@ -208,14 +210,10 @@ class Autoembedder(nn.Module):
         in_features = num_cont_features + sum_emb_dims
 
         hl = config["hidden_layers"]
-        encoder_input = orthogonal(
-            nn.Linear(in_features, hl[0][0], bias=config["layer_bias"] == 1)
-        )
+        encoder_input = nn.Linear(in_features, hl[0][0], bias=config["layer_bias"] == 1)
         encoder_hidden_layers = nn.ModuleList(
             [
-                orthogonal(
-                    nn.Linear(hl[x][0], hl[x][1], bias=config["layer_bias"] == 1)
-                )
+                nn.Linear(hl[x][0], hl[x][1], bias=config["layer_bias"] == 1)
                 for x in range(len(hl))
             ]
         )

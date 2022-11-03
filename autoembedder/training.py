@@ -84,7 +84,8 @@ def main() -> None:
         default=0,
         help="If `1`, drop categorical columns from the datasets.",
     )
-    parser.add_argument("--target", type=str, required=True)
+    parser.add_argument("--trim_eval_errors", type=int, required=False, default=0)
+    parser.add_argument("--target", type=str, required=False)
     parser.add_argument("--train_input_path", type=str, required=True)
     parser.add_argument("--test_input_path", type=str, required=True)
     parser.add_argument("--eval_input_path", type=str, required=False)
