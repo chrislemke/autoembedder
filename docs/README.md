@@ -36,7 +36,7 @@ pip install -r requirements.txt
 
 ## Parameters
 This is a list of all parameters that can be passed to the Autoembedder for training:
-| Argument                           | Type  | Required | Default value    | Comment                                                                                                                                                                                  |
+| Argument                           | Type  | Required (only for running using the `training.py`)| Default value    | Comment                                                                                                                                                                                  |
 | ---------------------------------- | ----- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | batch_size                         | int   | False    | 32               |                                                                                                                                                                                          |
 | drop_last                          | int   | False    | 1                | True/False                                                                                                                                                                               |
@@ -55,6 +55,7 @@ This is a list of all parameters that can be passed to the Autoembedder for trai
 | xavier_init                        | int   | False    | 0                | True/False                                                                                                                                                                               |
 | tensorboard_log_path               | str   | False    |                  |                                                                                                         |
 | trim_eval_errors                    | int   | False     |    0              | Removes the max and min loss when calculating the `mean loss diff` and `median loss diff`. This can be useful if some rows create very high losses.
+| verbose                    | int   | False     |    0              | Set this to `1` if you want to see the model summary and the validation and evaluation results. set this to `2` if you want to see the training progress bar. `0` means no output.
 | target                    | str   | False     |                  | The target column. If not set no evaluation will be performed.                                                                                                         |
 | train_input_path                   | str   | True     |                  |                                                                                                                                                                                          |
 | test_input_path                    | str   | True     |                  |

@@ -80,6 +80,7 @@ def main() -> None:
     parser.add_argument("--train_input_path", type=str, required=True)
     parser.add_argument("--test_input_path", type=str, required=True)
     parser.add_argument("--eval_input_path", type=str, required=False)
+    parser.add_argument("--verbose", type=int, required=False, default=1)
 
     parser.add_argument(
         "--hidden_layer_representation",
@@ -133,14 +134,14 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
 
     train_dl = dataloader(parameters["train_input_path"], parameters)
     test_dl = dataloader(parameters["test_input_path"], parameters)
-    num_continuous_cols = num_cont_columns(train_dl.dataset.df)
+    num_continuous_cols = num_cont_columns(train_dl.dataset.ddf)
     if parameters["drop_cat_columns"] == 0:
         __check_for_consistent_cat_rows(
-            train_dl.dataset.df, ast.literal_eval(parameters["cat_columns"])
+            train_dl.dataset.ddf, ast.literal_eval(parameters["cat_columns"])
         )
     embedded_sizes = embedded_sizes_and_dims(
-        train_dl.dataset.df,
-        test_dl.dataset.df,
+        train_dl.dataset.ddf,
+        test_dl.dataset.ddf,
         ast.literal_eval(parameters["cat_columns"]),
     )
     model = Autoembedder(model_params, num_continuous_cols, embedded_sizes)

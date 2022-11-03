@@ -124,19 +124,13 @@ class Autoembedder(nn.Module):
 
         self.last_target: Optional[torch.Tensor] = None
         self.code_value: Optional[torch.Tensor] = None
-        self.relu = torch.nn.ReLU()
         self.tanh = torch.nn.Tanh()
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
-        (
-            self.encoder_input,
-            self.encoder_hidden_layers,
-            self.decoder_hidden_layers,
-            self.decoder_output,
-        ) = self.__linear_layers(config, num_cont_features)
+        self.encoder, self.decoder = self.__modules(config, num_cont_features)
 
-        print(f"Model `in_features`: {self.encoder_input.in_features}")
+        print(f"Model `in_features`: {self.encoder[0].in_features}")
 
     def forward(self, x_cat: torch.Tensor, x_cont: torch.Tensor) -> torch.Tensor:
         """
@@ -187,24 +181,24 @@ class Autoembedder(nn.Module):
                 nn.init.xavier_normal_(m.weight)
 
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.tanh(self.encoder_input(x))
-        for layer in self.encoder_hidden_layers:
+        x = self.tanh(self.encoder[0](x))
+        for layer in self.encoder[1]:
             x = self.tanh(layer(x))
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
-        for layer in self.decoder_hidden_layers:
+        for layer in self.decoder[0]:
             x = self.tanh(layer(x))
-        return self.decoder_output(x)
+        return self.decoder[1](x)
 
-    def __linear_layers(
+    def __modules(
         self, config: Dict, num_cont_features: int
-    ) -> Tuple[nn.Module, nn.ModuleList, nn.ModuleList, nn.Module]:
+    ) -> Tuple[nn.Sequential, nn.Sequential]:
         """
         Args:
             config (Dict): Configuration containing the hidden layer structure of the model.
         Returns:
-            A tuple containing the linear layers.
+            Tuple[nn.Sequential, nn.Sequential]: Tuple containing the encoder and decoder.
         """
 
         sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)
@@ -218,7 +212,6 @@ class Autoembedder(nn.Module):
                 for x in range(len(hl))
             ]
         )
-
         decoder_hidden_layers = nn.ModuleList([])
         for x in reversed(range(len(hl))):
             layer = nn.Linear(hl[x][1], hl[x][0], bias=config["layer_bias"] == 1)
@@ -228,9 +221,7 @@ class Autoembedder(nn.Module):
             hl[0][0], in_features, bias=config["layer_bias"] == 1
         )
 
-        return (
-            encoder_input,
-            encoder_hidden_layers,
-            decoder_hidden_layers,
-            decoder_output,
-        )
+        encoder = nn.Sequential(encoder_input, encoder_hidden_layers)
+        decoder = nn.Sequential(decoder_hidden_layers, decoder_output)
+
+        return encoder, decoder

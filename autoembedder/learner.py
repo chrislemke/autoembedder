@@ -39,7 +39,7 @@ def fit(
     model: Autoembedder,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
-) -> None:
+) -> Autoembedder:
 
     """
     This method is the general wrapper around the fitting process. It is preparing the optimizer, the loss function, the trainer,
@@ -52,7 +52,7 @@ def fit(
         test_dataloader (DataLoader): The dataloader for the test data.
 
     Returns:
-        None
+        Autoembedder: Trained Autoembedder model.
     """
 
     model = model.to(
@@ -100,16 +100,19 @@ def fit(
     )
     evaluator = Engine(partial(loss_diff, model=model, parameters=parameters))
 
-    __print_summary(model, train_dataloader, parameters)
-    __attach_progress_bar(trainer)
+    if parameters["verbose"] >= 1:
+        __print_summary(model, train_dataloader, parameters)
+    __attach_progress_bar(trainer, parameters["verbose"] == 2)
     __attach_tb_logger_if_needed(
         trainer, validator, evaluator, tb_logger, model, optimizer, parameters
     )
     __attach_terminate_on_nan(trainer)
-    __attach_validation(trainer, validator, test_dataloader)
+    __attach_validation(trainer, validator, test_dataloader, parameters["verbose"] == 1)
 
     if parameters["eval_input_path"] and parameters["target"]:
-        __attach_evaluation(trainer, evaluator, test_dataloader)
+        __attach_evaluation(
+            trainer, evaluator, test_dataloader, parameters["verbose"] == 1
+        )
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
     )
@@ -143,9 +146,10 @@ def fit(
         train_dataloader,
         max_epochs=parameters["epochs"],
         epoch_length=(
-            len(train_dataloader.dataset.df.index) // train_dataloader.batch_size
+            len(train_dataloader.dataset.ddf.index) // train_dataloader.batch_size
         ),
     )
+    return model
 
 
 def __training_step(
@@ -219,50 +223,58 @@ def __validation_step(
     return val_loss.item()
 
 
-def __attach_progress_bar(trainer: Engine) -> None:
+def __attach_progress_bar(trainer: Engine, show_bar: bool) -> None:
     RunningAverage(output_transform=lambda x: x).attach(trainer, "loss")
-    ProgressBar(True).attach(trainer, ["loss"])
+    if show_bar:
+        ProgressBar(True).attach(trainer, ["loss"])
 
 
 def __attach_validation(
-    trainer: Engine, validator: Engine, test_dataloader: DataLoader
+    trainer: Engine, validator: Engine, test_dataloader: DataLoader, show_bar: bool
 ) -> None:
     def run_validator(
-        trainer: Engine, validator: Engine, dataloader: DataLoader
+        trainer: Engine, validator: Engine, dataloader: DataLoader, show_bar: bool
     ) -> None:
         validator.run(
             dataloader,
-            epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
+            epoch_length=(len(dataloader.dataset.ddf.index) // dataloader.batch_size),
             max_epochs=1,
         )
-        ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: validation loss: {validator.state.metrics['loss']:.7f}"
-        )
+        if show_bar:
+            ProgressBar(True).log_message(
+                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: validation loss: {validator.state.metrics['loss']:.7f}"
+            )
 
     RunningAverage(output_transform=lambda x: x).attach(validator, "loss")
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED,
-        partial(run_validator, validator=validator, dataloader=test_dataloader),
+        partial(
+            run_validator,
+            validator=validator,
+            dataloader=test_dataloader,
+            show_bar=show_bar,
+        ),
     )
 
 
 def __attach_evaluation(
-    trainer: Engine, evaluator: Engine, dataloader: DataLoader
+    trainer: Engine, evaluator: Engine, dataloader: DataLoader, show_bar: bool
 ) -> None:
     def run_evaluator(
-        trainer: Engine, evaluator: Engine, dataloader: DataLoader
+        trainer: Engine, evaluator: Engine, dataloader: DataLoader, show_bar: bool
     ) -> None:
         evaluator.run(
             dataloader,
-            epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
+            epoch_length=(len(dataloader.dataset.ddf.index) // dataloader.batch_size),
             max_epochs=1,
         )
-        ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss diff: {evaluator.state.metrics['mean_loss_diff']:.7f}"
-        )
-        ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss diff: {evaluator.state.metrics['median_loss_diff']:.7f}"
-        )  # pylint: disable=C0301
+        if show_bar:
+            ProgressBar(True).log_message(
+                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss diff: {evaluator.state.metrics['mean_loss_diff']:.7f}"
+            )
+            ProgressBar(True).log_message(
+                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss diff: {evaluator.state.metrics['median_loss_diff']:.7f}"
+            )  # pylint: disable=C0301
 
     RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_diff")
     RunningAverage(output_transform=lambda x: x[1]).attach(
@@ -270,7 +282,9 @@ def __attach_evaluation(
     )
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED,
-        partial(run_evaluator, evaluator=evaluator, dataloader=dataloader),
+        partial(
+            run_evaluator, evaluator=evaluator, dataloader=dataloader, show_bar=show_bar
+        ),
     )
 
 
@@ -400,7 +414,7 @@ def __attach_checkpoint_saving_if_needed(
     metric: str = "loss",
 ) -> None:
     def score_function(engine: Engine) -> float:
-        return -engine.state.metrics[metric]
+        return engine.state.metrics[metric]
 
     if parameters["n_save_checkpoints"] == 0:
         return
@@ -427,9 +441,9 @@ def __print_summary(
 ) -> None:
     batch_size = train_dataloader.batch_size
     cat, cont = model_input(
-        next(train_dataloader.dataset.df.itertuples(index=False)), parameters
+        next(train_dataloader.dataset.ddf.itertuples(index=False)), parameters
     )
     if cat.shape[0] == 1:
         summary(model)
         return
-    summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])
+    summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])  # type: ignore

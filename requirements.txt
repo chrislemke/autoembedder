@@ -356,9 +356,9 @@ platformdirs==2.5.2 ; python_version >= "3.9" and python_version < "3.11" \
 pre-commit==2.20.0 ; python_version >= "3.9" and python_version < "3.11" \
     --hash=sha256:51a5ba7c480ae8072ecdb6933df22d2f812dc897d5fe848778116129a681aac7 \
     --hash=sha256:a978dac7bc9ec0bcee55c18a277d553b0f419d259dadb4b9418ff2d00eb43959
-prompt-toolkit==3.0.31 ; python_version >= "3.9" and python_version < "3.11" \
-    --hash=sha256:9696f386133df0fc8ca5af4895afe5d78f5fcfe5258111c2a79a1c3e41ffa96d \
-    --hash=sha256:9ada952c9d1787f52ff6d5f3484d0b4df8952787c087edf6a1f7c2cb1ea88148
+prompt-toolkit==3.0.32 ; python_version >= "3.9" and python_version < "3.11" \
+    --hash=sha256:24becda58d49ceac4dc26232eb179ef2b21f133fecda7eed6018d341766ed76e \
+    --hash=sha256:e7f2129cba4ff3b3656bbdda0e74ee00d2f874a8bcdb9dd16f5fec7b3e173cae
 protobuf==3.19.6 ; python_version >= "3.9" and python_version < "3.11" \
     --hash=sha256:010be24d5a44be7b0613750ab40bc8b8cedc796db468eae6c779b395f50d1fa1 \
     --hash=sha256:0469bc66160180165e4e29de7f445e57a34ab68f49357392c5b2f54c656ab25e \
