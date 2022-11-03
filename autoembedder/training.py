@@ -53,15 +53,6 @@ def main() -> None:
         required=False,
         help="Path of the checkpoint to load.",
     )
-    parser.add_argument("--lr_scheduler", type=int, required=False, default=1)
-    parser.add_argument(
-        "--scheduler_mode",
-        type=str,
-        required=False,
-        default="min",
-        choices=["min", "max"],
-    )
-    parser.add_argument("--scheduler_patience", type=int, required=False, default=3)
 
     parser.add_argument("--lr", type=float, required=False, default=0.001)
     parser.add_argument("--amsgrad", type=int, required=False, default=0)

@@ -220,12 +220,12 @@ class Autoembedder(nn.Module):
 
         decoder_hidden_layers = nn.ModuleList([])
         for x in reversed(range(len(hl))):
-            layer = nn.Linear(hl[x][1], hl[x][0], bias=False)
-            layer.weight = nn.Parameter(encoder_hidden_layers[x].weight.t())
+            layer = nn.Linear(hl[x][1], hl[x][0], bias=config["layer_bias"] == 1)
             decoder_hidden_layers.append(layer)
 
-        decoder_output = nn.Linear(hl[0][0], in_features, bias=False)
-        decoder_output.weight = nn.Parameter(encoder_input.weight.t())
+        decoder_output = nn.Linear(
+            hl[0][0], in_features, bias=config["layer_bias"] == 1
+        )
 
         return (
             encoder_input,

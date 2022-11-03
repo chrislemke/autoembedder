@@ -29,7 +29,6 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 
 from autoembedder.evaluator import loss_diff
-from autoembedder.lr_schedular import ReduceLROnPlateauScheduler
 from autoembedder.model import Autoembedder, model_input
 
 date = datetime.now()
@@ -102,7 +101,6 @@ def fit(
     evaluator = Engine(partial(loss_diff, model=model, parameters=parameters))
 
     __print_summary(model, train_dataloader, parameters)
-    __attach_scheduler_if_needed(validator, optimizer, parameters)
     __attach_progress_bar(trainer)
     __attach_tb_logger_if_needed(
         trainer, validator, evaluator, tb_logger, model, optimizer, parameters
@@ -274,21 +272,6 @@ def __attach_evaluation(
         Events.EPOCH_COMPLETED,
         partial(run_evaluator, evaluator=evaluator, dataloader=dataloader),
     )
-
-
-def __attach_scheduler_if_needed(
-    engine: Engine, optimizer: Adam, parameters: Dict
-) -> None:
-    if parameters["lr_scheduler"] == 0 or parameters["scheduler_patience"] < 0:
-        return
-
-    torch_lr_scheduler = ReduceLROnPlateauScheduler(
-        optimizer,
-        "loss",
-        parameters["scheduler_mode"],
-        patience=parameters["scheduler_patience"],
-    )
-    engine.add_event_handler(Events.COMPLETED, torch_lr_scheduler)
 
 
 def __attach_tb_logger_if_needed(

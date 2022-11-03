@@ -29,8 +29,8 @@ def loss_diff(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, floa
         .sample(frac=1)
     )
 
-    df_0 = df.query(f"{target} == 0").drop([target], axis=1)
     df_1 = df.query(f"{target} == 1").drop([target], axis=1)
+    df_0 = df.query(f"{target} == 0").drop([target], axis=1).sample(n=df_1.shape[0])
 
     losses_0: List[float] = []
     losses_1: List[float] = []
