@@ -182,14 +182,14 @@ class Autoembedder(nn.Module):
 
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
         x = self.tanh(self.encoder[0](x))
-        for layer in self.encoder[1]:
+        for layer in self.encoder[1:]:
             x = self.tanh(layer(x))
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
-        for layer in self.decoder[0]:
+        for layer in self.decoder[:-1]:
             x = self.tanh(layer(x))
-        return self.decoder[1](x)
+        return self.decoder[-1](x)
 
     def __modules(
         self, config: Dict, num_cont_features: int
@@ -221,7 +221,7 @@ class Autoembedder(nn.Module):
             hl[0][0], in_features, bias=config["layer_bias"] == 1
         )
 
-        encoder = nn.Sequential(encoder_input, encoder_hidden_layers)
-        decoder = nn.Sequential(decoder_hidden_layers, decoder_output)
+        encoder = nn.Sequential(encoder_input, *encoder_hidden_layers)
+        decoder = nn.Sequential(*decoder_hidden_layers, decoder_output)
 
         return encoder, decoder
