@@ -24,7 +24,7 @@ pip install autoembedder
 ```
 
 
-## installing dependencies
+## Installing dependencies
 With [Poetry](https://python-poetry.org/):
 ```bash
 poetry install
@@ -33,7 +33,7 @@ With [pip](https://pypi.org/project/pip/):
 ```bash
 pip install -r requirements.txt
 ```
-## usage
+## Usage
 ### 0. Some imports
 ```python
 from autoembedder import Autoembedder, dataloader, fit
@@ -49,10 +49,9 @@ valid_dl = dataloader(vaild_df)
 Now, we need to set the parameters. They are going to be used for handling the data and training the model. In this example, only parameters for the training are set. [Here](https://github.com/chrislemke/autoembedder#parameters) you find a list of all possible parameters. This should do it:
 ```python
 parameters = {
-    "hidden_layers": [[25, 20], [20, 15]],
+    "hidden_layers": [[25, 20], [20, 10]],
     "epochs": 10,
     "lr": 0.0001,
-    "dropout": 0.1,
     "verbose": 1,
 }
 ```
