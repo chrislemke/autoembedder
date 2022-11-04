@@ -11,7 +11,7 @@
 [![isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 ## Introduction
-The Autoembedder is an autoencoder with additional embedding layers for the categorical columns. Its usage is flexible, and hyperparameters like the number of layers can be easily adjusted and tuned. Although primarily designed for [Dask DataFrame](https://docs.dask.org/en/stable/dataframe.html), it can be easily modified to support other data structures.
+The Autoembedder is an autoencoder with additional embedding layers for the categorical columns. Its usage is flexible, and hyperparameters like the number of layers can be easily adjusted and tuned. The data provided for training can be either a path to a [Dask](https://docs.dask.org/en/stable/dataframe.html) or [Pandas](https://pandas.pydata.org/) DataFrame stored in the Parquet format or the DataFrame object directly.
 
 ## Installation
 If you are using [Poetry](https://python-poetry.org/), you can install the package with the following command:

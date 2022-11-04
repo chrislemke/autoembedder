@@ -60,26 +60,26 @@ def fit(
             "cuda"
             if torch.cuda.is_available()
             else "mps"
-            if torch.backends.mps.is_available() and parameters["use_mps"] == 1
+            if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
             else "cpu"
         )
     )
-    if torch.backends.mps.is_available() is False or parameters["use_mps"] == 0:
+    if torch.backends.mps.is_available() is False or parameters.get("use_mps", 0) == 0:
         model = model.double()
 
     optimizer = Adam(
         model.parameters(),
-        lr=parameters["lr"],
-        weight_decay=parameters["weight_decay"],
-        amsgrad=parameters["amsgrad"] == 1,
+        lr=parameters.get("lr", 1e-3),
+        weight_decay=parameters.get("weight_decay", 0),
+        amsgrad=parameters.get("amsgrad", 0) == 1,
     )
     criterion = MSELoss()
 
-    if parameters["xavier_init"] == 1:
+    if parameters.get("xavier_init", 0) == 1:
         model.init_xavier_weights()
 
     tb_logger = None
-    if parameters["tensorboard_log_path"]:
+    if parameters.get("tensorboard_log_path", None):
         tb_logger = TensorboardLogger(
             log_dir=f"{parameters['tensorboard_log_path']}/{date.strftime('%Y.%m.%d-%H_%M')}"
         )
@@ -100,18 +100,20 @@ def fit(
     )
     evaluator = Engine(partial(loss_diff, model=model, parameters=parameters))
 
-    if parameters["verbose"] >= 1:
+    if parameters.get("verbose", 0) >= 1:
         __print_summary(model, train_dataloader, parameters)
-    __attach_progress_bar(trainer, parameters["verbose"] == 2)
+    __attach_progress_bar(trainer, parameters.get("verbose", 0) == 2)
     __attach_tb_logger_if_needed(
         trainer, validator, evaluator, tb_logger, model, optimizer, parameters
     )
     __attach_terminate_on_nan(trainer)
-    __attach_validation(trainer, validator, test_dataloader, parameters["verbose"] == 1)
+    __attach_validation(
+        trainer, validator, test_dataloader, parameters.get("verbose", 0) == 1
+    )
 
-    if parameters["eval_input_path"] and parameters["target"]:
+    if parameters.get("eval_input_path", None) and parameters.get("target", None):
         __attach_evaluation(
-            trainer, evaluator, test_dataloader, parameters["verbose"] == 1
+            trainer, evaluator, test_dataloader, parameters.get("verbose", 0) == 1
         )
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
@@ -119,14 +121,15 @@ def fit(
 
     __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
 
-    if parameters["load_checkpoint_path"]:
+    if parameters.get("load_checkpoint_path", None):
         checkpoint = torch.load(
             parameters["load_checkpoint_path"],
             map_location=torch.device(
                 "cuda"
                 if torch.cuda.is_available()
                 else "mps"
-                if torch.backends.mps.is_available() and parameters["use_mps"] == 1
+                if torch.backends.mps.is_available()
+                and parameters.get("use_mps", 0) == 1
                 else "cpu"
             ),
         )
@@ -185,7 +188,7 @@ def __training_step(
     outputs = model(cat, cont)
     train_loss = criterion(outputs, model.last_target)
 
-    if parameters["l1_lambda"] > 0:
+    if parameters.get("l1_lambda", 0) > 0:
         l1_lambda = parameters["l1_lambda"]
         l1_norm = sum(p.abs().sum() for p in model.parameters())
         train_loss = train_loss + l1_lambda * l1_norm
@@ -297,7 +300,7 @@ def __attach_tb_logger_if_needed(
     optimizer: Adam,
     parameters: Dict,
 ) -> None:
-    if parameters["tensorboard_log_path"] is None:
+    if parameters.get("tensorboard_log_path", None) is None:
         return
 
     tb_logger.attach_output_handler(
@@ -375,7 +378,7 @@ def __attach_tb_teardown_if_needed(
             "hparam/train_loss": trainer.state.metrics["loss"],
             "hparam/val_loss": validator.state.metrics["loss"],
         }
-        if parameters["eval_input_path"]:
+        if parameters.get("eval_input_path", None):
             metrics["hparam/mean_loss_diff"] = evaluator.state.metrics[
                 "median_loss_diff"
             ]
@@ -391,7 +394,7 @@ def __attach_tb_teardown_if_needed(
 
         tb_logger.close()
 
-    if parameters["tensorboard_log_path"] is None:
+    if parameters.get("tensorboard_log_path", None) is None:
         return
 
     trainer.add_event_handler(
@@ -416,7 +419,10 @@ def __attach_checkpoint_saving_if_needed(
     def score_function(engine: Engine) -> float:
         return engine.state.metrics[metric]
 
-    if parameters["n_save_checkpoints"] == 0:
+    if (
+        parameters.get("n_save_checkpoints", 0) == 0
+        or parameters.get("model_save_path", None) is None
+    ):
         return
 
     checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}"
@@ -426,7 +432,7 @@ def __attach_checkpoint_saving_if_needed(
         save_handler=checkpoint_dir,
         score_name=metric,
         score_function=score_function,
-        n_saved=parameters["n_save_checkpoints"],
+        n_saved=parameters.get("n_save_checkpoints", 0),
         greater_or_equal=True,
     )
     engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
