@@ -33,6 +33,44 @@ With [pip](https://pypi.org/project/pip/):
 ```bash
 pip install -r requirements.txt
 ```
+## usage
+### 0. Some imports
+```python
+from autoembedder import Autoembedder, dataloader, fit
+```
+### 1. Create dataloaders
+First, we create two [`dataloaders`](https://chrislemke.github.io/autoembedder/autoembedder.data/#autoembedder.data.Dataset.__init__). One for training, and the other for validation data. As `source` they either accept a path to a Parquet file, to a folder of Parquet files or a [Pandas](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)/[Dask](https://docs.dask.org/en/stable/dataframe.html) DataFrame.
+```python
+train_dl = dataloader(train_df)
+valid_dl = dataloader(vaild_df)
+```
+
+### 2. Set parameters
+Now, we need to set the parameters. They are going to be used for handling the data and training the model. In this example, only parameters for the training are set. [Here](https://github.com/chrislemke/autoembedder#parameters) you find a list of all possible parameters. This should do it:
+```python
+parameters = {
+    "hidden_layers": [[25, 20], [20, 15]],
+    "epochs": 10,
+    "lr": 0.0001,
+    "dropout": 0.1,
+    "verbose": 1,
+}
+```
+
+### 3. Initialize the autoembedder
+Then, we need to initialize the [autoembedder](https://chrislemke.github.io/autoembedder/autoembedder.model/#autoembedder.model.Autoembedder). In this example, we are not using any categorical features. So we can skip the `embedding_sizes` argument.
+```python
+model = Autoembedder(parameters, num_cont_features=train_df.shape[1])
+```
+
+### 4. Train the model
+Everything is set up. Now we can [fit](https://chrislemke.github.io/autoembedder/autoembedder.learner/#autoembedder.learner.fit) the model.
+```python
+fit(parameters, model, train_dl, valid_dl)
+```
+
+## Example
+Check out [this Jupyter notebook](https://github.com/chrislemke/autoembedder/blob/main/example.ipynb) for an applied example using the [Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) from Kaggle.
 
 ## Parameters
 This is a list of all parameters that can be passed to the Autoembedder for training:
@@ -49,6 +87,7 @@ This is a list of all parameters that can be passed to the Autoembedder for trai
 | lr                                 | float | False    | 0.001            |                                                                                                                                                                                          |
 | amsgrad                                 | int | False    | 0            | True/False
 | epochs                             | int   | True     |                  |
+| dropout_rate                             | float   | False     |   0               | Dropout rate for the dropout layers in the encoder and decoder.
 | layer_bias                             | int   | False     |  1                | True/False|                                                                                                                                                                                          |
 | weight_decay                       | float | False    | 0                |                                                                                                                                                                                          |
 | l1_lambda                          | float | False    | 0                |                                                                                                                                                                                          |
@@ -66,7 +105,7 @@ This is a list of all parameters that can be passed to the Autoembedder for trai
 | cat_columns                        | str   | False    | "[]"             | Contains a string representation of a list of list of categorical columns (strings). The columns which use the same encoder should be together in a list. E.g.: `"[['a', 'b'], ['c']]"`. |
 
 
-## Run
+## Run the training script
 Something like this should do it:
 ```bash
 python3 training.py --epochs 20 \

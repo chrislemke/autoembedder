@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 import dask.dataframe as dd
 import pandas as pd
@@ -54,7 +54,8 @@ class _Dataset(IterableDataset):
 
 
 def dataloader(
-    source: Union[str, dd.DataFrame, pd.DataFrame], parameters: Dict
+    source: Union[str, dd.DataFrame, pd.DataFrame],
+    parameters: Optional[Dict[str, Any]] = None,
 ) -> DataLoader:
     """
     Args:
@@ -64,6 +65,9 @@ def dataloader(
     Returns:
         DataLoader: A DataLoader object
     """
+    if parameters is None:
+        parameters = {}
+
     return DataLoader(
         dataset=_Dataset(source, parameters.get("drop_cat_columns", 0) == 1),
         batch_size=parameters.get("batch_size", 32),

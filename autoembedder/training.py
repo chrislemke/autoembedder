@@ -64,6 +64,7 @@ def main() -> None:
         default=1,
         help="Bias for the encoder layers.",
     )
+    parser.add_argument("--dropout_rate", type=float, required=False, default=0)
     parser.add_argument("--weight_decay", type=float, required=False, default=0)
     parser.add_argument("--l1_lambda", type=float, required=False, default=0)
     parser.add_argument("--xavier_init", type=int, required=False, default=0)
