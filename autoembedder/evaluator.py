@@ -3,7 +3,7 @@
 from typing import Dict, List, NamedTuple, Tuple
 
 import dask.dataframe as dd
-import pandas as pd
+import numpy as np
 import torch
 from einops import rearrange
 from torch.nn import MSELoss
@@ -11,7 +11,7 @@ from torch.nn import MSELoss
 from autoembedder.model import Autoembedder, model_input
 
 
-def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, float]:  # type: ignore
+def loss_diff(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, float]:  # type: ignore
     """
     Args:
         _ (None): Not in use. Needed by Pytorch-ignite.
@@ -20,35 +20,35 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, flo
         parameters (Dict): Dictionary with the parameters used for training and prediction.
 
     Returns:
-        Tuple[float, float]: `loss_mean_delta`, `loss_std_delta` and dataframe .
+        Tuple[float, float]: `loss_mean_diff`, `loss_std_diff` and dataframe .
     """
     target = parameters["target"]
     df = (
         dd.read_parquet(parameters["eval_input_path"], infer_divisions=True)
         .compute()
         .sample(frac=1)
-        .reset_index(drop=True)
     )
-    df_0 = df.query(f"{target} == 0").drop([target], axis=1)
-    df_1 = df.query(f"{target} == 1").drop([target], axis=1)
 
-    df_0 = df_0.head(df_1.shape[0])
-    df_1 = df_1.head(df_1.shape[0])
+    df_1 = df.query(f"{target} == 1").drop([target], axis=1)
+    df_0 = df.query(f"{target} == 0").drop([target], axis=1).sample(n=df_1.shape[0])
+
     losses_0: List[float] = []
     losses_1: List[float] = []
 
-    loss = MSELoss()
-    for batch in df_0.itertuples(index=False):
-        losses_0.append(__predict(model, batch, loss, parameters))
-    for batch in df_1.itertuples(index=False):
-        losses_1.append(__predict(model, batch, loss, parameters))
+    for losses_df, losses in [(df_0, losses_0), (df_1, losses_1)]:
+        loss = MSELoss()
+        for batch in losses_df.itertuples(index=False):
+            losses.append(__predict(model, batch, loss, parameters))
 
-    df = pd.DataFrame(zip(losses_0, losses_1), columns=["loss_0", "loss_1"])
-    df_mean = df.mean(axis=0)
-    df_median = df.median(axis=0)
-    mean_loss_delta = df_mean[1] - df_mean[0]
-    median_loss_delta = df_median[1] - df_median[0]
-    return mean_loss_delta, median_loss_delta
+    if parameters["trim_eval_errors"] == 1:
+        losses_0.remove(max(losses_0))
+        losses_0.remove(min(losses_0))
+        losses_1.remove(max(losses_1))
+        losses_1.remove(min(losses_1))
+
+    return np.absolute(np.mean(losses_1) - np.mean(losses_0)), np.absolute(
+        np.median(losses_1) - np.median(losses_0)
+    )
 
 
 def __predict(

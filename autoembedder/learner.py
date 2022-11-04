@@ -28,8 +28,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
-from autoembedder.evaluator import loss_delta
-from autoembedder.lr_schedular import ReduceLROnPlateauScheduler
+from autoembedder.evaluator import loss_diff
 from autoembedder.model import Autoembedder, model_input
 
 date = datetime.now()
@@ -40,7 +39,7 @@ def fit(
     model: Autoembedder,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
-) -> None:
+) -> Autoembedder:
 
     """
     This method is the general wrapper around the fitting process. It is preparing the optimizer, the loss function, the trainer,
@@ -53,7 +52,7 @@ def fit(
         test_dataloader (DataLoader): The dataloader for the test data.
 
     Returns:
-        None
+        Autoembedder: Trained Autoembedder model.
     """
 
     model = model.to(
@@ -61,26 +60,26 @@ def fit(
             "cuda"
             if torch.cuda.is_available()
             else "mps"
-            if torch.backends.mps.is_available() and parameters["use_mps"] == 1
+            if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
             else "cpu"
         )
     )
-    if torch.backends.mps.is_available() is False or parameters["use_mps"] == 0:
+    if torch.backends.mps.is_available() is False or parameters.get("use_mps", 0) == 0:
         model = model.double()
 
     optimizer = Adam(
         model.parameters(),
-        lr=parameters["lr"],
-        weight_decay=parameters["weight_decay"],
-        amsgrad=parameters["amsgrad"] == 1,
+        lr=parameters.get("lr", 1e-3),
+        weight_decay=parameters.get("weight_decay", 0),
+        amsgrad=parameters.get("amsgrad", 0) == 1,
     )
     criterion = MSELoss()
 
-    if parameters["xavier_init"] == 1:
+    if parameters.get("xavier_init", 0) == 1:
         model.init_xavier_weights()
 
     tb_logger = None
-    if parameters["tensorboard_log_path"]:
+    if parameters.get("tensorboard_log_path", None):
         tb_logger = TensorboardLogger(
             log_dir=f"{parameters['tensorboard_log_path']}/{date.strftime('%Y.%m.%d-%H_%M')}"
         )
@@ -99,33 +98,38 @@ def fit(
             __validation_step, model=model, criterion=criterion, parameters=parameters
         )
     )
-    evaluator = Engine(partial(loss_delta, model=model, parameters=parameters))
+    evaluator = Engine(partial(loss_diff, model=model, parameters=parameters))
 
-    __print_summary(model, train_dataloader, parameters)
-    __attach_scheduler_if_needed(validator, optimizer, parameters)
-    __attach_progress_bar(trainer)
+    if parameters.get("verbose", 0) >= 1:
+        __print_summary(model, train_dataloader, parameters)
+    __attach_progress_bar(trainer, parameters.get("verbose", 0) == 2)
     __attach_tb_logger_if_needed(
         trainer, validator, evaluator, tb_logger, model, optimizer, parameters
     )
     __attach_terminate_on_nan(trainer)
-    __attach_validation(trainer, validator, test_dataloader)
+    __attach_validation(
+        trainer, validator, test_dataloader, parameters.get("verbose", 0) == 1
+    )
 
-    if parameters["eval_input_path"]:
-        __attach_evaluation(trainer, evaluator, test_dataloader)
+    if parameters.get("eval_input_path", None) and parameters.get("target", None):
+        __attach_evaluation(
+            trainer, evaluator, test_dataloader, parameters.get("verbose", 0) == 1
+        )
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
     )
 
     __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
 
-    if parameters["load_checkpoint_path"]:
+    if parameters.get("load_checkpoint_path", None):
         checkpoint = torch.load(
             parameters["load_checkpoint_path"],
             map_location=torch.device(
                 "cuda"
                 if torch.cuda.is_available()
                 else "mps"
-                if torch.backends.mps.is_available() and parameters["use_mps"] == 1
+                if torch.backends.mps.is_available()
+                and parameters.get("use_mps", 0) == 1
                 else "cpu"
             ),
         )
@@ -145,9 +149,10 @@ def fit(
         train_dataloader,
         max_epochs=parameters["epochs"],
         epoch_length=(
-            len(train_dataloader.dataset.df.index) // train_dataloader.batch_size
+            len(train_dataloader.dataset.ddf.index) // train_dataloader.batch_size
         ),
     )
+    return model
 
 
 def __training_step(
@@ -183,7 +188,7 @@ def __training_step(
     outputs = model(cat, cont)
     train_loss = criterion(outputs, model.last_target)
 
-    if parameters["l1_lambda"] > 0:
+    if parameters.get("l1_lambda", 0) > 0:
         l1_lambda = parameters["l1_lambda"]
         l1_norm = sum(p.abs().sum() for p in model.parameters())
         train_loss = train_loss + l1_lambda * l1_norm
@@ -221,74 +226,69 @@ def __validation_step(
     return val_loss.item()
 
 
-def __attach_progress_bar(trainer: Engine) -> None:
+def __attach_progress_bar(trainer: Engine, show_bar: bool) -> None:
     RunningAverage(output_transform=lambda x: x).attach(trainer, "loss")
-    ProgressBar(True).attach(trainer, ["loss"])
+    if show_bar:
+        ProgressBar(True).attach(trainer, ["loss"])
 
 
 def __attach_validation(
-    trainer: Engine, validator: Engine, test_dataloader: DataLoader
+    trainer: Engine, validator: Engine, test_dataloader: DataLoader, show_bar: bool
 ) -> None:
     def run_validator(
-        trainer: Engine, validator: Engine, dataloader: DataLoader
+        trainer: Engine, validator: Engine, dataloader: DataLoader, show_bar: bool
     ) -> None:
         validator.run(
             dataloader,
-            epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
+            epoch_length=(len(dataloader.dataset.ddf.index) // dataloader.batch_size),
             max_epochs=1,
         )
-        ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: validation loss: {validator.state.metrics['loss']:.7f}"
-        )
+        if show_bar:
+            ProgressBar(True).log_message(
+                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: validation loss: {validator.state.metrics['loss']:.7f}"
+            )
 
     RunningAverage(output_transform=lambda x: x).attach(validator, "loss")
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED,
-        partial(run_validator, validator=validator, dataloader=test_dataloader),
+        partial(
+            run_validator,
+            validator=validator,
+            dataloader=test_dataloader,
+            show_bar=show_bar,
+        ),
     )
 
 
 def __attach_evaluation(
-    trainer: Engine, evaluator: Engine, dataloader: DataLoader
+    trainer: Engine, evaluator: Engine, dataloader: DataLoader, show_bar: bool
 ) -> None:
     def run_evaluator(
-        trainer: Engine, evaluator: Engine, dataloader: DataLoader
+        trainer: Engine, evaluator: Engine, dataloader: DataLoader, show_bar: bool
     ) -> None:
         evaluator.run(
             dataloader,
-            epoch_length=(len(dataloader.dataset.df.index) // dataloader.batch_size),
+            epoch_length=(len(dataloader.dataset.ddf.index) // dataloader.batch_size),
             max_epochs=1,
         )
-        ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss delta: {evaluator.state.metrics['mean_loss_delta']:.7f}"
-        )
-        ProgressBar(True).log_message(
-            f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss delta: {evaluator.state.metrics['median_loss_delta']:.7f}"
-        )  # pylint: disable=C0301
+        if show_bar:
+            ProgressBar(True).log_message(
+                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss diff: {evaluator.state.metrics['mean_loss_diff']:.7f}"
+            )
+            ProgressBar(True).log_message(
+                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss diff: {evaluator.state.metrics['median_loss_diff']:.7f}"
+            )  # pylint: disable=C0301
 
-    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_delta")
+    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_diff")
     RunningAverage(output_transform=lambda x: x[1]).attach(
-        evaluator, "median_loss_delta"
+        evaluator, "median_loss_diff"
     )
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED,
-        partial(run_evaluator, evaluator=evaluator, dataloader=dataloader),
+        partial(
+            run_evaluator, evaluator=evaluator, dataloader=dataloader, show_bar=show_bar
+        ),
     )
-
-
-def __attach_scheduler_if_needed(
-    engine: Engine, optimizer: Adam, parameters: Dict
-) -> None:
-    if parameters["lr_scheduler"] == 0 or parameters["scheduler_patience"] < 0:
-        return
-
-    torch_lr_scheduler = ReduceLROnPlateauScheduler(
-        optimizer,
-        "loss",
-        parameters["scheduler_mode"],
-        patience=parameters["scheduler_patience"],
-    )
-    engine.add_event_handler(Events.COMPLETED, torch_lr_scheduler)
 
 
 def __attach_tb_logger_if_needed(
@@ -300,7 +300,7 @@ def __attach_tb_logger_if_needed(
     optimizer: Adam,
     parameters: Dict,
 ) -> None:
-    if parameters["tensorboard_log_path"] is None:
+    if parameters.get("tensorboard_log_path", None) is None:
         return
 
     tb_logger.attach_output_handler(
@@ -325,15 +325,15 @@ def __attach_tb_logger_if_needed(
     tb_logger.attach_output_handler(
         evaluator,
         event_name=Events.EPOCH_COMPLETED,
-        tag="loss_delta",
-        metric_names=["mean_loss_delta"],
+        tag="loss_diff",
+        metric_names=["mean_loss_diff"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach_output_handler(
         evaluator,
         event_name=Events.EPOCH_COMPLETED,
-        tag="loss_delta",
-        metric_names=["median_loss_delta"],
+        tag="loss_diff",
+        metric_names=["median_loss_diff"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach(
@@ -378,12 +378,12 @@ def __attach_tb_teardown_if_needed(
             "hparam/train_loss": trainer.state.metrics["loss"],
             "hparam/val_loss": validator.state.metrics["loss"],
         }
-        if parameters["eval_input_path"]:
-            metrics["hparam/mean_loss_delta"] = evaluator.state.metrics[
-                "median_loss_delta"
+        if parameters.get("eval_input_path", None):
+            metrics["hparam/mean_loss_diff"] = evaluator.state.metrics[
+                "median_loss_diff"
             ]
-            metrics["hparam/median_loss_delta"] = evaluator.state.metrics[
-                "median_loss_delta"
+            metrics["hparam/median_loss_diff"] = evaluator.state.metrics[
+                "median_loss_diff"
             ]
 
         tb_logger.writer.add_hparams(
@@ -394,7 +394,7 @@ def __attach_tb_teardown_if_needed(
 
         tb_logger.close()
 
-    if parameters["tensorboard_log_path"] is None:
+    if parameters.get("tensorboard_log_path", None) is None:
         return
 
     trainer.add_event_handler(
@@ -417,9 +417,12 @@ def __attach_checkpoint_saving_if_needed(
     metric: str = "loss",
 ) -> None:
     def score_function(engine: Engine) -> float:
-        return -engine.state.metrics[metric]
+        return engine.state.metrics[metric]
 
-    if parameters["n_save_checkpoints"] == 0:
+    if (
+        parameters.get("n_save_checkpoints", 0) == 0
+        or parameters.get("model_save_path", None) is None
+    ):
         return
 
     checkpoint_dir = f"{parameters['model_save_path']}/checkpoints/{date.strftime('%Y-%m-%d')}/{date.strftime('%H-%M-%S')}"
@@ -429,7 +432,7 @@ def __attach_checkpoint_saving_if_needed(
         save_handler=checkpoint_dir,
         score_name=metric,
         score_function=score_function,
-        n_saved=parameters["n_save_checkpoints"],
+        n_saved=parameters.get("n_save_checkpoints", 0),
         greater_or_equal=True,
     )
     engine.add_event_handler(Events.EPOCH_COMPLETED(every=1), checkpointer)
@@ -444,9 +447,9 @@ def __print_summary(
 ) -> None:
     batch_size = train_dataloader.batch_size
     cat, cont = model_input(
-        next(train_dataloader.dataset.df.itertuples(index=False)), parameters
+        next(train_dataloader.dataset.ddf.itertuples(index=False)), parameters
     )
     if cat.shape[0] == 1:
         summary(model)
         return
-    summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])
+    summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])  # type: ignore

@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from einops import rearrange
 from torch import nn
-from torch.nn.utils.parametrizations import orthogonal
 
 
 def embedded_sizes_and_dims(
@@ -62,7 +61,7 @@ def model_input(
         "cuda"
         if torch.cuda.is_available()
         else "mps"
-        if torch.backends.mps.is_available() and parameters["use_mps"] == 1
+        if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
         else "cpu"
     )
     cat = []
@@ -75,7 +74,7 @@ def model_input(
                 if (
                     feature.dtype == torch.float64
                     and torch.backends.mps.is_available()
-                    and parameters["use_mps"] == 1
+                    and parameters.get("use_mps", 0) == 1
                 ):
                     feature = feature.to(torch.float32)
                 cont.append(feature)
@@ -110,9 +109,12 @@ class Autoembedder(nn.Module):
     ) -> None:
         """
         Args:
-            config (Dict): JSON config file for the model. When `hidden_layers` is not empty `num_hidden_layers` will be ignored. Otherwise the number of units for the hidden layers will be calculated. `exponent_addition` are used in the `linear_layers` function. Check the documentation below for more information.
+            config (Dict): Configuration for the model. When `hidden_layers` is not empty `num_hidden_layers` will be ignored.
+                Otherwise the number of units for the hidden layers will be calculated. `exponent_addition` are used in the `linear_layers` function.
+                Check the documentation below for more information.
             num_cont_features (int): Number of continues features.
-            embedding_sizes (List[Tuple[int, int]]): List of tuples. Each tuple contains the size of the dictionary (unique values) of embeddings and the size of each embedding vector.
+            embedding_sizes (List[Tuple[int, int]]): List of tuples.
+                Each tuple contains the size of the dictionary (unique values) of embeddings and the size of each embedding vector.
 
         Returns:
             None
@@ -122,18 +124,13 @@ class Autoembedder(nn.Module):
 
         self.last_target: Optional[torch.Tensor] = None
         self.code_value: Optional[torch.Tensor] = None
-        self.leaky_relu = torch.nn.LeakyReLU(0.1)
+        self.tanh = torch.nn.Tanh()
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
-        (
-            self.encoder_input,
-            self.encoder_hidden_layers,
-            self.decoder_hidden_layers,
-            self.decoder_output,
-        ) = self.__linear_layers(config, num_cont_features)
+        self.encoder, self.decoder = self.__modules(config, num_cont_features)
 
-        print(f"Model `in_features`: {self.encoder_input.in_features}")
+        print(f"Model `in_features`: {self.encoder[0].in_features}")
 
     def forward(self, x_cat: torch.Tensor, x_cont: torch.Tensor) -> torch.Tensor:
         """
@@ -184,54 +181,49 @@ class Autoembedder(nn.Module):
                 nn.init.xavier_normal_(m.weight)
 
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.leaky_relu(self.encoder_input(x))
-        for layer in self.encoder_hidden_layers:
-            x = self.leaky_relu(layer(x))
+        x = self.tanh(self.encoder[0](x))
+        for layer in self.encoder[1:]:
+            x = self.tanh(layer(x))
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
-        for layer in self.decoder_hidden_layers:
-            x = self.leaky_relu(layer(x))
-        return self.leaky_relu(self.decoder_output(x))
+        for layer in self.decoder[:-1]:
+            x = self.tanh(layer(x))
+        return self.decoder[-1](x)
 
-    def __linear_layers(
+    def __modules(
         self, config: Dict, num_cont_features: int
-    ) -> Tuple[nn.Module, nn.ModuleList, nn.ModuleList, nn.Module]:
+    ) -> Tuple[nn.Sequential, nn.Sequential]:
         """
         Args:
             config (Dict): Configuration containing the hidden layer structure of the model.
         Returns:
-            A tuple containing the linear layers.
+            Tuple[nn.Sequential, nn.Sequential]: Tuple containing the encoder and decoder.
         """
 
         sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)
         in_features = num_cont_features + sum_emb_dims
 
         hl = config["hidden_layers"]
-        encoder_input = orthogonal(
-            nn.Linear(in_features, hl[0][0], bias=config["layer_bias"] == 1)
+        encoder_input = nn.Linear(
+            in_features, hl[0][0], bias=config.get("layer_bias", 1) == 1
         )
         encoder_hidden_layers = nn.ModuleList(
             [
-                orthogonal(
-                    nn.Linear(hl[x][0], hl[x][1], bias=config["layer_bias"] == 1)
-                )
+                nn.Linear(hl[x][0], hl[x][1], bias=config.get("layer_bias", 1) == 1)
                 for x in range(len(hl))
             ]
         )
-
         decoder_hidden_layers = nn.ModuleList([])
         for x in reversed(range(len(hl))):
-            layer = nn.Linear(hl[x][1], hl[x][0], bias=False)
-            layer.weight = nn.Parameter(encoder_hidden_layers[x].weight.t())
+            layer = nn.Linear(hl[x][1], hl[x][0], bias=config.get("layer_bias", 1) == 1)
             decoder_hidden_layers.append(layer)
 
-        decoder_output = nn.Linear(hl[0][0], in_features, bias=False)
-        decoder_output.weight = nn.Parameter(encoder_input.weight.t())
-
-        return (
-            encoder_input,
-            encoder_hidden_layers,
-            decoder_hidden_layers,
-            decoder_output,
+        decoder_output = nn.Linear(
+            hl[0][0], in_features, bias=config.get("layer_bias", 1) == 1
         )
+
+        encoder = nn.Sequential(encoder_input, *encoder_hidden_layers)
+        decoder = nn.Sequential(*decoder_hidden_layers, decoder_output)
+
+        return encoder, decoder

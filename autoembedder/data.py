@@ -1,48 +1,73 @@
 # -*- coding: utf-8 -*-
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import dask.dataframe as dd
+import pandas as pd
 from torch.utils.data import DataLoader, IterableDataset
 
 
-class Dataset(IterableDataset):
-    def __init__(self, source: str, drop_cat_columns: bool = False) -> None:
+class _Dataset(IterableDataset):
+    def __init__(
+        self,
+        source: Union[str, dd.DataFrame, pd.DataFrame],
+        drop_cat_columns: bool = False,
+    ) -> None:
         """
         Args:
-            source (str): path of the Dask dataframe
+            source (Union[str, dd.DataFrame, pd.DataFrame]): Path to Dask/Pandas DataFrame stored as Parquet or a Dask/Pandas DataFrame.
             drop_cat_columns (bool): whether to drop categorical columns
 
         Returns:
             None
         """
         super().__init__()
-        self.df = dd.read_parquet(source, infer_divisions=True, engine="pyarrow")
+        self.ddf = _Dataset.__data_from_source(source)
         if drop_cat_columns:
-            self.df = self.df.drop(
-                self.df.columns[self.df.dtypes == "category"], axis=1
+            self.ddf = self.ddf.drop(
+                self.ddf.columns[self.ddf.dtypes == "category"], axis=1
             )
 
     def __iter__(self) -> Any:
-        return self.df.itertuples(index=False)
+        return self.ddf.itertuples(index=False)
 
     def __getitem__(self, index: int) -> None:
         raise NotImplementedError
 
+    @staticmethod
+    def __data_from_source(
+        source: Union[str, dd.DataFrame, pd.DataFrame]
+    ) -> dd.DataFrame:
 
-def dataloader(source: str, parameters: Dict) -> DataLoader:
+        if isinstance(source, str):
+            try:
+                ddf = dd.read_parquet(source, infer_divisions=True, engine="pyarrow")
+            except ValueError:
+                ddf = dd.from_pandas(pd.read_parquet(source), npartitions=1)
+        elif isinstance(source, dd.DataFrame):
+            ddf = source
+        elif isinstance(source, pd.DataFrame):
+            ddf = dd.from_pandas(source, npartitions=1)
+        else:
+            raise ValueError("`source` must be a string or a Dask DataFrame!")
+        return ddf
+
+
+def dataloader(
+    source: Union[str, dd.DataFrame, pd.DataFrame], parameters: Dict
+) -> DataLoader:
     """
     Args:
-        source (str): Path of the Dask dataframe
+        source (Union[str, dd.DataFrame, pd.DataFrame]): Path to Dask/Pandas DataFrame stored as Parquet or a Dask/Pandas DataFrame.
         parameters (Dict): Parameters for the DataLoader
 
     Returns:
         DataLoader: A DataLoader object
     """
     return DataLoader(
-        dataset=Dataset(source, parameters["drop_cat_columns"] == 1),
-        batch_size=parameters["batch_size"],
-        pin_memory=parameters["pin_memory"] == 1,
-        num_workers=parameters["num_workers"],
-        drop_last=parameters["drop_last"] == 1,
+        dataset=_Dataset(source, parameters.get("drop_cat_columns", 0) == 1),
+        batch_size=parameters.get("batch_size", 32),
+        pin_memory=parameters.get("pin_memory", 1) == 1,
+        num_workers=parameters.get("num_workers", 0),
+        drop_last=parameters.get("drop_last", 1) == 1,
     )
