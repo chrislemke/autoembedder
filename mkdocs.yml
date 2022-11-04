@@ -66,10 +66,9 @@ nav:
   - The Autoembedder: autoembedder.md
   - Boosted autoencoder ensemble: autoembedder.bae-docs.md
   - Code reference:
-    - Autoembedder:
-        - Training: autoembedder.training.md
-        - Learner: autoembedder.learner.md
-        - Data: autoembedder.data.md
-        - Model: autoembedder.model.md
-        - Evaluator: autoembedder.evaluator.md
-        - LR schedular: autoembedder.lr_schedular.md
+      - Autoembedder:
+          - Training: autoembedder.training.md
+          - Learner: autoembedder.learner.md
+          - Data: autoembedder.data.md
+          - Model: autoembedder.model.md
+          - Evaluator: autoembedder.evaluator.md
