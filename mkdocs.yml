@@ -29,18 +29,15 @@ theme:
   features:
     - navigation.tracking
     - navigation.top
+    - navigation.expand
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
-      accent: orange
       toggle:
         icon: material/toggle-switch
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: white
-      accent: orange
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to light mode
@@ -49,13 +46,7 @@ extra:
 plugins:
   - search
   - autorefs
-  - mkdocstrings:
-      handlers:
-        python:
-          rendering:
-            show_root_heading: false
-      watch:
-        - autoembedder
+  - mkdocstrings
 
 extra_javascript:
   - javascripts/mathjax.js

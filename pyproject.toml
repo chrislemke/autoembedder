@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Autoembedder"
-version = "0.1.6"
+version = "0.1.7"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
 authors = ["Christopher Lemke <chris@syhbl.mozmail.com>"]
 license = "MIT"
@@ -15,9 +15,9 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 keywords = [
-    "model architecture",
     "autoencoder",
     "embeddings",
+    "model",
     "pytorch",
     "neural network",
     "machine learning",
