@@ -130,7 +130,7 @@ class Autoembedder(nn.Module):
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
-        self.encoder, self.decoder = self.__autoencoder(config, num_cont_features)
+        self.encoder, self.decoder = self.__autoencoder(num_cont_features)
 
         print(f"Set model config: {config}")
         print(f"Model `in_features`: {self.encoder[0].in_features}")
@@ -186,18 +186,34 @@ class Autoembedder(nn.Module):
     def __encode(self, x: torch.Tensor) -> torch.Tensor:
         x = nn.Tanh()(self.encoder[0](x))
         for layer in self.encoder[1:]:
-            x = nn.Tanh()(layer(x))
+            x = self.__activation(layer(x))
             x = nn.Dropout(self.config.get("dropout_rate", 0.0))(x)
         return x
 
     def __decode(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.decoder[:-1]:
-            x = nn.Tanh()(layer(x))
+            x = self.__activation(layer(x))
             x = nn.Dropout(self.config.get("dropout_rate", 0.0))(x)
         return self.decoder[-1](x)
 
+    def __activation(self, x: torch.Tensor) -> torch.Tensor:
+        if self.config.get("activation", "tanh") == "tanh":
+            return nn.Tanh()(x)
+        if self.config.get("activation", "tanh") == "relu":
+            return nn.ReLU()(x)
+        if self.config.get("activation", "tanh") == "leaky_relu":
+            return nn.LeakyReLU()(x)
+        if self.config.get("activation", "tanh") == "elu":
+            return nn.ELU()(x)
+        raise ValueError(
+            f"""
+            Unsupported activation: `{self.config['activation']}`!.
+            Please pick one of the following: `tanh`, `relu`, `leaky_relu`, `elu`.
+            """
+        )
+
     def __autoencoder(
-        self, config: Dict, num_cont_features: int
+        self, num_cont_features: int
     ) -> Tuple[nn.Sequential, nn.Sequential]:
         """
         Args:
@@ -206,27 +222,32 @@ class Autoembedder(nn.Module):
             Tuple[torch.nn.Sequential, torch.nn.Sequential]: Tuple containing the encoder and decoder.
         """
 
-        sum_emb_dims = sum(emb.embedding_dim for emb in self.embeddings)
-        in_features = num_cont_features + sum_emb_dims
-        hl = config["hidden_layers"]
+        in_features = num_cont_features + sum(
+            emb.embedding_dim for emb in self.embeddings
+        )
+        hl = self.config["hidden_layers"]
 
         encoder_input = nn.Linear(
-            in_features, hl[0][0], bias=config.get("layer_bias", 1) == 1
+            in_features, hl[0][0], bias=self.config.get("layer_bias", 1) == 1
         )
         encoder_hidden_layers = nn.ModuleList(
             [
-                nn.Linear(hl[x][0], hl[x][1], bias=config.get("layer_bias", 1) == 1)
+                nn.Linear(
+                    hl[x][0], hl[x][1], bias=self.config.get("layer_bias", 1) == 1
+                )
                 for x in range(len(hl))
             ]
         )
         decoder_hidden_layers = nn.ModuleList(
             [
-                nn.Linear(hl[x][1], hl[x][0], bias=config.get("layer_bias", 1) == 1)
+                nn.Linear(
+                    hl[x][1], hl[x][0], bias=self.config.get("layer_bias", 1) == 1
+                )
                 for x in reversed(range(len(hl)))
             ]
         )
         decoder_output = nn.Linear(
-            hl[0][0], in_features, bias=config.get("layer_bias", 1) == 1
+            hl[0][0], in_features, bias=self.config.get("layer_bias", 1) == 1
         )
 
         encoder = nn.Sequential(encoder_input, *encoder_hidden_layers)
