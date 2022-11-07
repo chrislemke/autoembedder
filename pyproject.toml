@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Autoembedder"
-version = "0.1.8"
+version = "0.1.9"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
 authors = ["Christopher Lemke <chris@syhbl.mozmail.com>"]
 license = "MIT"
@@ -42,10 +42,10 @@ black = {extras = ["jupyter"], version = "^22.10.0"}
 isort = "^5.10.1"
 mkdocs = "1.4.0"
 mkdocstrings = "0.18.1"
-mkdocs-material = "8.5.6"
+mkdocs-material = "8.5.8"
 mypy = "^0.982"
 pre-commit = "^2.20.0"
-pylint = "^2.15.3"
+pylint = "^2.15.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

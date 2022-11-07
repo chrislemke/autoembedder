@@ -46,10 +46,11 @@ def fit(
     the validator and the evaluator. Then it attaches everything to the corresponding engines and runs the training.
 
     Args:
-        parameters (Dict): The parameters of the training process.
+        parameters (Dict[str, Any]): The parameters of the training process.
+            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
         model (Autoembedder): The model to be trained.
-        train_dataloader (DataLoader): The dataloader for the training data.
-        test_dataloader (DataLoader): The dataloader for the test data.
+        train_dataloader (torch.utils.data.DataLoader): The dataloader for the training data.
+        test_dataloader (torch.utils.data.DataLoader): The dataloader for the test data.
 
     Returns:
         Autoembedder: Trained Autoembedder model.
@@ -108,12 +109,12 @@ def fit(
     )
     __attach_terminate_on_nan(trainer)
     __attach_validation(
-        trainer, validator, test_dataloader, parameters.get("verbose", 0) == 1
+        trainer, validator, test_dataloader, parameters.get("verbose", 0) >= 1
     )
 
     if parameters.get("eval_input_path", None) and parameters.get("target", None):
         __attach_evaluation(
-            trainer, evaluator, test_dataloader, parameters.get("verbose", 0) == 1
+            trainer, evaluator, test_dataloader, parameters.get("verbose", 0) >= 1
         )
     __attach_checkpoint_saving_if_needed(
         trainer, validator, model, optimizer, parameters
@@ -139,10 +140,10 @@ def fit(
         )
         print(
             f"""
-        Checkpoint loaded!
-        Epoch_length: {checkpoint['trainer']['epoch_length']}
-        Iterations: {checkpoint['trainer']['iteration']}
-        """
+            Checkpoint loaded!
+            Epoch_length: {checkpoint['trainer']['epoch_length']}
+            Iterations: {checkpoint['trainer']['iteration']}
+            """
         )
 
     trainer.run(
@@ -171,12 +172,12 @@ def __training_step(
     But using ignite this is handled by the engine.
 
     Args:
-        engine (Engine): The engine that is calling this method.
+        engine (ignite.engine.Engine): The engine that is calling this method.
         batch (NamedTuple): The batch that is passed to the engine for training.
         model (Autoembedder): The model to be trained.
         optimizer (torch.optim): The optimizer to be used for training.
         criterion (torch.nn.MSELoss): The loss function to be used for training.
-        parameters (Dict): The parameters of the training process.
+        parameters (Dict[str, Any]): The parameters of the training process.
 
     Returns:
         Union[np.float32, np.float64]: The loss of the current batch.
@@ -208,11 +209,11 @@ def __validation_step(
 
     """
     Args:
-        engine (Engine): The engine that is calling this method.
+        engine (ignite.engine.Engine): The engine that is calling this method.
         batch (NamedTuple): The batch that is passed to the engine for validation.
         model (Autoembedder): The model used for validation.
-        criterion (MSELoss): The loss function to be used for validation.
-        parameters (Dict): The parameters of the validation process.
+        criterion (torch.nn.MSELoss): The loss function to be used for validation.
+        parameters (Dict[str, Any]): The parameters of the validation process.
 
     Returns:
         Union[np.float32, np.float64]: The loss of the current batch.

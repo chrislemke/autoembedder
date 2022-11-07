@@ -15,7 +15,7 @@ class _Dataset(IterableDataset):
     ) -> None:
         """
         Args:
-            source (Union[str, dd.DataFrame, pd.DataFrame]): Path to Dask/Pandas DataFrame stored as Parquet or a Dask/Pandas DataFrame.
+            source (Union[str, dask.DataFrame, pandas.DataFrame]): Path to Dask/Pandas DataFrame stored as Parquet or a Dask/Pandas DataFrame.
             drop_cat_columns (bool): whether to drop categorical columns
 
         Returns:
@@ -38,7 +38,6 @@ class _Dataset(IterableDataset):
     def __data_from_source(
         source: Union[str, dd.DataFrame, pd.DataFrame]
     ) -> dd.DataFrame:
-
         if isinstance(source, str):
             try:
                 ddf = dd.read_parquet(source, infer_divisions=True, engine="pyarrow")
@@ -59,11 +58,12 @@ def dataloader(
 ) -> DataLoader:
     """
     Args:
-        source (Union[str, dd.DataFrame, pd.DataFrame]): Path to Dask/Pandas DataFrame stored as Parquet or a Dask/Pandas DataFrame.
-        parameters (Dict): Parameters for the DataLoader
+        source (Union[str, dask.DataFrame, pandas.DataFrame]): Path to Dask/Pandas DataFrame stored as Parquet or a Dask/Pandas DataFrame.
+        parameters (Optional[Dict[str, Any]]): Parameters for the DataLoader.
+            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
 
     Returns:
-        DataLoader: A DataLoader object
+        torch.utils.data.DataLoader: A DataLoader object
     """
     if parameters is None:
         parameters = {}

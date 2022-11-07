@@ -17,10 +17,11 @@ def loss_diff(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, floa
         _ (None): Not in use. Needed by Pytorch-ignite.
         __ (None): Not in use. Needed by Pytorch-ignite.
         model (Autoembedder): Instance from the model used for prediction.
-        parameters (Dict): Dictionary with the parameters used for training and prediction.
+        parameters (Dict[str, Any]): Dictionary with the parameters used for training and prediction.
+            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
 
     Returns:
-        Tuple[float, float]: `loss_mean_diff`, `loss_std_diff` and dataframe .
+        Tuple[float, float]: `loss_mean_diff`, `loss_std_diff` and DataFrame.
     """
     target = parameters["target"]
     df = (
@@ -40,7 +41,7 @@ def loss_diff(_, __, model: Autoembedder, parameters: Dict) -> Tuple[float, floa
         for batch in losses_df.itertuples(index=False):
             losses.append(__predict(model, batch, loss, parameters))
 
-    if parameters["trim_eval_errors"] == 1:
+    if parameters.get("trim_eval_errors", 0) == 1:
         losses_0.remove(max(losses_0))
         losses_0.remove(min(losses_0))
         losses_1.remove(max(losses_1))
@@ -59,8 +60,9 @@ def __predict(
     Args:
         model (Autoembedder): Instance from the model used for prediction.
         batch (NamedTuple): A batch of data.
-        loss_fn (MSELoss): Instance of the loss function.
+        loss_fn (torch.nn.MSELoss): Instance of the loss function.
         parameters (Dict): Dictionary with the parameters used for evaluation.
+            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
 
     Returns:
         float: Loss value.

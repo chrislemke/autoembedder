@@ -18,6 +18,7 @@ def main() -> None:
 
     """
     Main function for parsing arguments and start `__prepare_and_fit`.
+    In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
 
     Returns:
         None
@@ -159,7 +160,7 @@ def __check_for_consistent_cat_rows(
     This is needed so the is set up correctly. Please check the `--cat_columns` parameter for more information.
 
     Args:
-        df (pd.DataFrame): The dataframe containing the categorical columns.
+        df (pandas.DataFrame): The dataframe containing the categorical columns.
         cat_columns (List[List[str]]): A list of lists representing the categorical columns which were encoded using the same encoder. E.g.: [['a', 'b'], ['c']]. Check the `--cat_columns` parameter for more information.
 
     Returns:

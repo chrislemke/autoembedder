@@ -125,10 +125,8 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
-.pyre/
+# Custom
 autoembedder-venv
 .vscode
-public
-None
-logs
+public/
+logs/
