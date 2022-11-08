@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import dask.dataframe as dd

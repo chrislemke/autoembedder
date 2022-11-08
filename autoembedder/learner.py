@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=W0613
 
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from typing import Dict, NamedTuple, Union
+from typing import Dict, NamedTuple, Optional, Union
 
+import dask.dataframe as dd
 import numpy as np
+import pandas as pd
 import torch
 from ignite.contrib.handlers.tensorboard_logger import (
     GradsHistHandler,
@@ -28,7 +29,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
-from autoembedder.evaluator import loss_diff
+from autoembedder.evaluator import loss_delta
 from autoembedder.model import Autoembedder, model_input
 
 date = datetime.now()
@@ -39,6 +40,7 @@ def fit(
     model: Autoembedder,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
+    eval_df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None,
 ) -> Autoembedder:
 
     """
@@ -51,6 +53,9 @@ def fit(
         model (Autoembedder): The model to be trained.
         train_dataloader (torch.utils.data.DataLoader): The dataloader for the training data.
         test_dataloader (torch.utils.data.DataLoader): The dataloader for the test data.
+        df (Optional[Union[dd.DataFrame, pd.DataFrame]], optional): Dask or Pandas DataFrame for the evaluation step.
+            If the path to the evaluation data is given in the parameters (`eval_input_path`) this argument is not needed.
+            If neither `eval_input_path` nor `eval_df` is given, no evaluation step is performed.
 
     Returns:
         Autoembedder: Trained Autoembedder model.
@@ -99,7 +104,9 @@ def fit(
             __validation_step, model=model, criterion=criterion, parameters=parameters
         )
     )
-    evaluator = Engine(partial(loss_diff, model=model, parameters=parameters))
+    evaluator = Engine(
+        partial(loss_delta, model=model, parameters=parameters, df=eval_df)
+    )
 
     if parameters.get("verbose", 0) >= 1:
         __print_summary(model, train_dataloader, parameters)
@@ -112,7 +119,9 @@ def fit(
         trainer, validator, test_dataloader, parameters.get("verbose", 0) >= 1
     )
 
-    if parameters.get("eval_input_path", None) and parameters.get("target", None):
+    if (
+        parameters.get("eval_input_path", None) or eval_df is not None
+    ) and parameters.get("target", None):
         __attach_evaluation(
             trainer, evaluator, test_dataloader, parameters.get("verbose", 0) >= 1
         )
@@ -274,18 +283,18 @@ def __attach_evaluation(
         )
         if show_bar:
             ProgressBar(True).log_message(
-                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: mean loss diff: {evaluator.state.metrics['mean_loss_diff']:.7f}"
+                f"Mean loss delta: {evaluator.state.metrics['mean_loss_delta']:.7f}"
             )
             ProgressBar(True).log_message(
-                f"Epoch [{trainer.state.epoch}/{trainer.state.max_epochs}]: median loss diff: {evaluator.state.metrics['median_loss_diff']:.7f}"
+                f"Median loss delta: {evaluator.state.metrics['median_loss_delta']:.7f}"
             )  # pylint: disable=C0301
 
-    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_diff")
+    RunningAverage(output_transform=lambda x: x[0]).attach(evaluator, "mean_loss_delta")
     RunningAverage(output_transform=lambda x: x[1]).attach(
-        evaluator, "median_loss_diff"
+        evaluator, "median_loss_delta"
     )
     trainer.add_event_handler(
-        Events.EPOCH_COMPLETED,
+        Events.COMPLETED,
         partial(
             run_evaluator, evaluator=evaluator, dataloader=dataloader, show_bar=show_bar
         ),
@@ -326,15 +335,15 @@ def __attach_tb_logger_if_needed(
     tb_logger.attach_output_handler(
         evaluator,
         event_name=Events.EPOCH_COMPLETED,
-        tag="loss_diff",
-        metric_names=["mean_loss_diff"],
+        tag="loss_delta",
+        metric_names=["mean_loss_delta"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach_output_handler(
         evaluator,
         event_name=Events.EPOCH_COMPLETED,
-        tag="loss_diff",
-        metric_names=["median_loss_diff"],
+        tag="loss_delta",
+        metric_names=["median_loss_delta"],
         global_step_transform=global_step_from_engine(trainer),
     )
     tb_logger.attach(
@@ -380,11 +389,11 @@ def __attach_tb_teardown_if_needed(
             "hparam/val_loss": validator.state.metrics["loss"],
         }
         if parameters.get("eval_input_path", None):
-            metrics["hparam/mean_loss_diff"] = evaluator.state.metrics[
-                "median_loss_diff"
+            metrics["hparam/mean_loss_delta"] = evaluator.state.metrics[
+                "median_loss_delta"
             ]
-            metrics["hparam/median_loss_diff"] = evaluator.state.metrics[
-                "median_loss_diff"
+            metrics["hparam/median_loss_delta"] = evaluator.state.metrics[
+                "median_loss_delta"
             ]
 
         tb_logger.writer.add_hparams(

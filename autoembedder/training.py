@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import argparse
 import ast
 import itertools
@@ -15,7 +13,6 @@ from autoembedder.model import Autoembedder, embedded_sizes_and_dims, num_cont_c
 
 
 def main() -> None:
-
     """
     Main function for parsing arguments and start `__prepare_and_fit`.
     In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.

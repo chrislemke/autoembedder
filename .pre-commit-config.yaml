@@ -15,7 +15,6 @@ repos:
       - id: check-toml
       - id: debug-statements
       - id: fix-byte-order-marker
-      - id: fix-encoding-pragma
       - id: forbid-new-submodules
 
   - repo: https://github.com/psf/black
@@ -43,7 +42,7 @@ repos:
           - "--config-file=pyproject.toml"
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.38.0
+    rev: v3.2.0
     hooks:
       - id: pyupgrade
 

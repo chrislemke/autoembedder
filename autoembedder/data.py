@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from typing import Any, Dict, Optional, Union
 
 import dask.dataframe as dd
