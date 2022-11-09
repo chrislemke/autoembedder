@@ -83,7 +83,7 @@ def main() -> None:
     parser.add_argument("--verbose", type=int, required=False, default=1)
 
     parser.add_argument(
-        "--hidden_layer_representation",
+        "--hidden_layers",
         type=str,
         required=True,
         help="""
@@ -105,11 +105,9 @@ def main() -> None:
 
     args, _ = parser.parse_known_args()
     args.cat_columns = args.cat_columns.replace("\\", "")
-    args.hidden_layer_representation = args.hidden_layer_representation.replace(
-        "\\", ""
-    )
+    args.hidden_layers = args.hidden_layers.replace("\\", "")
     m_config = {
-        "hidden_layers": ast.literal_eval(args.hidden_layer_representation),
+        "hidden_layers": ast.literal_eval(args.hidden_layers),
         "layer_bias": args.layer_bias,
     }
     __prepare_and_fit(vars(args), m_config)

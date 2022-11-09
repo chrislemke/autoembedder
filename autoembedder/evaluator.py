@@ -86,13 +86,23 @@ def __predict(
         float: Loss value.
     """
 
+    device = (
+        torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps"
+            if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
+            else "cpu"
+        ),
+    )
+
     with torch.no_grad():
         model.eval()
         cat, cont = model_input(batch, parameters)
         cat = rearrange(cat, "c r -> r c")
         cont = rearrange(cont, "c r -> r c")
-        cat = __adjust_dtype(cat, model)
-        cont = __adjust_dtype(cont, model)
+        cat = __adjust_dtype(cat, model).to(device)
+        cont = __adjust_dtype(cont, model).to(device)
         out = model(cat, cont)
     return loss_fn(out, model.last_target).item()
 
