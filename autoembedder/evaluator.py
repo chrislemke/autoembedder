@@ -86,14 +86,12 @@ def __predict(
         float: Loss value.
     """
 
-    device = (
-        torch.device(
-            "cuda"
-            if torch.cuda.is_available()
-            else "mps"
-            if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
-            else "cpu"
-        ),
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
+        else "cpu"
     )
 
     with torch.no_grad():
