@@ -2,7 +2,7 @@
 # The Autoembedder
 [![deploy package](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml/badge.svg)](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml)
 [![pypi](https://img.shields.io/pypi/v/autoembedder)](https://pypi.org/project/autoembedder/)
-![python version](https://img.shields.io/pypi/pyversions/autoembedder?logo=python&logoColor=yellow)
+[![python version](https://img.shields.io/pypi/pyversions/autoembedder?logo=python&logoColor=yellow)](https://python.org)
 [![docs](https://img.shields.io/badge/docs-mkdoks%20material-blue)](https://chrislemke.github.io/autoembedder/)
 [![license](https://img.shields.io/github/license/chrislemke/autoembedder)](https://github.com/chrislemke/autoembedder/blob/main/LICENSE)
 [![downloads](https://img.shields.io/pypi/dm/autoembedder)](https://pypistats.org/packages/autoembedder)
