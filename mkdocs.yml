@@ -54,10 +54,7 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 nav:
-  - The Autoembedder: autoembedder.md
-  - Boosted autoencoder ensemble: autoembedder.bae-docs.md
   - Code reference:
-      - Autoembedder:
           - Training: autoembedder.training.md
           - Learner: autoembedder.learner.md
           - Data: autoembedder.data.md

@@ -79,9 +79,9 @@ def model_input(
             else:
                 raise ValueError(f"Unsupported dtype: {feature.dtype}!")
         if not cat:
-            return torch.empty((1, 0), dtype=torch.int8), torch.stack(cont, 0).to(
-                device
-            )
+            return torch.empty((1, 0), dtype=torch.int8, device=device), torch.stack(
+                cont, 0
+            ).to(device)
         return torch.stack(cat, 0).to(device), torch.stack(cont, 0).to(device)
 
     # Used if `batch` does not contains tensors.
