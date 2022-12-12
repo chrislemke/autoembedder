@@ -7,9 +7,9 @@ from typing import Dict, Iterable, List
 import pandas as pd
 import torch
 
-from autoembedder import learner
-from autoembedder.data import dataloader
-from autoembedder.model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
+from src import learner
+from src.data import dataloader
+from src.model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
 
 def main() -> None:
