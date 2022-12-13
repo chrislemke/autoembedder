@@ -38,7 +38,9 @@ class _Dataset(IterableDataset):
     ) -> dd.DataFrame:
         if isinstance(source, str):
             try:
-                ddf = dd.read_parquet(source, infer_divisions=True, engine="pyarrow")
+                ddf = dd.read_parquet(
+                    source, infer_divisions=True, engine="fastparquet"
+                )
             except ValueError:
                 ddf = dd.from_pandas(pd.read_parquet(source), npartitions=1)
         elif isinstance(source, dd.DataFrame):
@@ -67,9 +69,9 @@ def dataloader(
         parameters = {}
 
     return DataLoader(
-        dataset=_Dataset(source, parameters.get("drop_cat_columns", 0) == 1),
+        dataset=_Dataset(source, parameters.get("drop_cat_columns", False)),
         batch_size=parameters.get("batch_size", 32),
-        pin_memory=parameters.get("pin_memory", 1) == 1,
+        pin_memory=parameters.get("pin_memory", True),
         num_workers=parameters.get("num_workers", 0),
-        drop_last=parameters.get("drop_last", 1) == 1,
+        drop_last=parameters.get("drop_last", True),
     )

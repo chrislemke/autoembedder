@@ -1,4 +1,3 @@
-import argparse
 import ast
 import itertools
 from datetime import datetime
@@ -6,13 +5,85 @@ from typing import Dict, Iterable, List
 
 import pandas as pd
 import torch
+import typer
 
 from src import learner
 from src.data import dataloader
 from src.model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
+app = typer.Typer(rich_markup_mode="rich")
 
-def main() -> None:
+
+@app.command(help="Runs the training process for the autoembedder.")  # type: ignore
+def main(
+    batch_size: int = typer.Option(32, min=1, help="Batch size for the training."),
+    epochs: int = typer.Option(30, min=1, help="Number of epochs for the training."),
+    drop_last: bool = typer.Option(
+        True, help="Drop last batch if it is smaller than the batch size."
+    ),
+    pin_memory: bool = typer.Option(True, help="Pin memory for the dataloader."),
+    num_workers: int = typer.Option(0, help="Number of workers for the dataloader."),
+    use_mps: bool = typer.Option(
+        False,
+        help="Set this to `True` if you want to use the MPS Backend for running on Mac using the M1 GPU.",
+    ),
+    model_title: str = typer.Option(
+        f"autoembedder_{str(datetime.now()).replace(' ', '_').replace(':', '-')}.pt",
+        help="Title of the model.",
+    ),
+    model_save_path: str = typer.Option(None, help="Path to save the model."),
+    n_save_checkpoints: int = typer.Option(6, help="Number of stored checkpoints."),
+    load_checkpoint_path: str = typer.Option(
+        None, help="Path of the checkpoint to load."
+    ),
+    lr: float = typer.Option(0.001, help="Learning rate for the optimizer."),
+    amsgrad: bool = typer.Option(False, help="Use amsgrad for the optimizer."),
+    layer_bias: bool = typer.Option(True, help="Bias for the encoder layers."),
+    dropout_rate: float = typer.Option(0, help="Dropout rate for the encoder layers."),
+    activation: str = typer.Option(
+        "tanh", help="Activation function for the encoder layers."
+    ),
+    weight_decay: float = typer.Option(0, help="Weight decay for the optimizer."),
+    l1_lambda: float = typer.Option(0, help="L1 regularization for the optimizer."),
+    xavier_init: bool = typer.Option(
+        False, help="Use xavier initialization for the encoder layers."
+    ),
+    tensorboard_log_path: str = typer.Option(
+        None, help="Path to save the tensorboard logs."
+    ),
+    drop_cat_columns: bool = typer.Option(
+        False, help="If `True`, drop categorical columns from the datasets."
+    ),
+    trim_eval_errors: bool = typer.Option(
+        False, help="If `True`, trim the evaluation errors."
+    ),
+    target: str = typer.Option("target", help="Name of the target column."),
+    train_input_path: str = typer.Option(None, help="Path to the training dataset."),
+    test_input_path: str = typer.Option(None, help="Path to the test dataset."),
+    eval_input_path: str = typer.Option(None, help="Path to the evaluation dataset."),
+    verbose: int = typer.Option(
+        0,
+        help="""
+        Set this to 1 if you want to see the model summary and the validation and evaluation results.
+        set this to 2 if you want to see the training progress bar. 0 means no output.
+        """,
+    ),
+    hidden_layers: str = typer.Option(
+        None,
+        help="""
+        Contains a string representation of a list of list of integers which represents the hidden layer structure.
+        E.g.: `"[[64, 32], [32, 16], [16, 8]]"`
+        """,
+    ),
+    cat_columns: str = typer.Option(
+        "[]",
+        help="""
+        Contains a string representation of a list of list of categorical columns (strings).
+        The columns which use the same encoder should be together in a list. E.g.: `"[['a', 'b'], ['c']]"`.
+        If you don't need or want to use categorical columns from your dataset you may consider using: `--drop_cat_columns`.
+        """,
+    ),
+) -> None:
     """
     Main function for parsing arguments and start `__prepare_and_fit`.
     In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
@@ -21,96 +92,43 @@ def main() -> None:
         None
 
     """
-    date = str(datetime.now()).replace(" ", "_").replace(":", "-")
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--batch_size", type=int, required=False, default=32)
-    parser.add_argument("--drop_last", type=int, required=False, default=1)
-    parser.add_argument("--pin_memory", type=int, required=False, default=1)
-    parser.add_argument("--num_workers", type=int, required=False, default=0)
-    parser.add_argument(
-        "--use_mps",
-        type=int,
-        required=False,
-        default=0,
-        help="Set this to `1` if you want to use the MPS Backend for running on Mac using the M1 GPU.",
-    )
-    parser.add_argument(
-        "--model_title", type=str, required=False, default=f"autoembedder_{date}.pt"
-    )
-    parser.add_argument("--model_save_path", type=str, required=False)
-    parser.add_argument(
-        "--n_save_checkpoints",
-        type=int,
-        required=False,
-        default=6,
-        help="Number of stored checkpoints.",
-    )
-    parser.add_argument(
-        "--load_checkpoint_path",
-        type=str,
-        required=False,
-        help="Path of the checkpoint to load.",
-    )
 
-    parser.add_argument("--lr", type=float, required=False, default=0.001)
-    parser.add_argument("--amsgrad", type=int, required=False, default=0)
-    parser.add_argument("--epochs", type=int, required=False, default=30)
-    parser.add_argument(
-        "--layer_bias",
-        type=int,
-        required=False,
-        default=1,
-        help="Bias for the encoder layers.",
-    )
-    parser.add_argument("--dropout_rate", type=float, required=False, default=0)
-    parser.add_argument("--activation", type=str, required=False, default="tanh")
-    parser.add_argument("--weight_decay", type=float, required=False, default=0)
-    parser.add_argument("--l1_lambda", type=float, required=False, default=0)
-    parser.add_argument("--xavier_init", type=int, required=False, default=0)
-    parser.add_argument("--tensorboard_log_path", type=str, required=False)
-    parser.add_argument(
-        "--drop_cat_columns",
-        type=int,
-        required=False,
-        default=0,
-        help="If `1`, drop categorical columns from the datasets.",
-    )
-    parser.add_argument("--trim_eval_errors", type=int, required=False, default=0)
-    parser.add_argument("--target", type=str, required=False)
-    parser.add_argument("--train_input_path", type=str, required=True)
-    parser.add_argument("--test_input_path", type=str, required=True)
-    parser.add_argument("--eval_input_path", type=str, required=False)
-    parser.add_argument("--verbose", type=int, required=False, default=1)
-
-    parser.add_argument(
-        "--hidden_layers",
-        type=str,
-        required=True,
-        help="""
-        Contains a string representation of a list of list of integers which represents the hidden layer structure.
-        E.g.: `"[[64, 32], [32, 16], [16, 8]]"`
-        """,
-    )
-    parser.add_argument(
-        "--cat_columns",
-        type=str,
-        required=False,
-        default="[]",
-        help="""
-        Contains a string representation of a list of list of categorical columns (strings).
-        The columns which use the same encoder should be together in a list. E.g.: `"[['a', 'b'], ['c']]"`.
-        If you don't need or want to use categorical columns from your dataset you may consider using: `--drop_cat_columns`.
-        """,
-    )
-
-    args, _ = parser.parse_known_args()
-    args.cat_columns = args.cat_columns.replace("\\", "")
-    args.hidden_layers = args.hidden_layers.replace("\\", "")
+    cat_columns = cat_columns.replace("\\", "")
+    hidden_layers = hidden_layers.replace("\\", "")
     m_config = {
-        "hidden_layers": ast.literal_eval(args.hidden_layers),
-        "layer_bias": args.layer_bias,
+        "hidden_layers": ast.literal_eval(hidden_layers),
+        "layer_bias": layer_bias,
     }
-    __prepare_and_fit(vars(args), m_config)
+
+    parameters = {
+        "batch_size": batch_size,
+        "drop_last": drop_last,
+        "pin_memory": pin_memory,
+        "num_workers": num_workers,
+        "use_mps": use_mps,
+        "model_title": model_title,
+        "model_save_path": model_save_path,
+        "n_save_checkpoints": n_save_checkpoints,
+        "load_checkpoint_path": load_checkpoint_path,
+        "lr": lr,
+        "amsgrad": amsgrad,
+        "epochs": epochs,
+        "dropout_rate": dropout_rate,
+        "activation": activation,
+        "weight_decay": weight_decay,
+        "l1_lambda": l1_lambda,
+        "xavier_init": xavier_init,
+        "tensorboard_log_path": tensorboard_log_path,
+        "drop_cat_columns": drop_cat_columns,
+        "trim_eval_errors": trim_eval_errors,
+        "target": target,
+        "train_input_path": train_input_path,
+        "test_input_path": test_input_path,
+        "eval_input_path": eval_input_path,
+        "verbose": verbose,
+    }
+
+    __prepare_and_fit(parameters, m_config)
 
 
 def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
@@ -127,20 +145,23 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
         None
     """
 
-    if torch.backends.mps.is_available() is False or parameters["use_mps"] == 0:
+    if (
+        torch.backends.mps.is_available() is False
+        or parameters.get("use_mps", False) is False
+    ):
         torch.set_default_tensor_type(torch.DoubleTensor)
 
     train_dl = dataloader(parameters["train_input_path"], parameters)
     test_dl = dataloader(parameters["test_input_path"], parameters)
     num_continuous_cols = num_cont_columns(train_dl.dataset.ddf)
-    if parameters["drop_cat_columns"] == 0:
+    if parameters.get("drop_cat_columns", False) is False:
         __check_for_consistent_cat_rows(
             train_dl.dataset.ddf, ast.literal_eval(parameters["cat_columns"])
         )
     embedded_sizes = embedded_sizes_and_dims(
         train_dl.dataset.ddf,
         test_dl.dataset.ddf,
-        ast.literal_eval(parameters["cat_columns"]),
+        ast.literal_eval(parameters.get("cat_columns", "[]")),
     )
     model = Autoembedder(model_params, num_continuous_cols, embedded_sizes)
 
@@ -177,4 +198,4 @@ def __check_for_consistent_cat_rows(
 
 
 if __name__ == "__main__":
-    main()
+    app()

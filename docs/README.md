@@ -72,29 +72,44 @@ fit(parameters, model, train_dl, valid_dl)
 Check out [this Jupyter notebook](https://github.com/chrislemke/autoembedder/blob/main/example.ipynb) for an applied example using the [Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) from Kaggle.
 
 ## Parameters
-This is a list of all parameters that can be passed to the Autoembedder for training. The `Required`, `Default value`, and `Comment` columns are only apply if using the training script (`training.py`):
+This is a list of all parameters that can be passed to the Autoembedder for training. When using the training script the `_` needs to be replaced with `-` and the parameters need to be passed as arguments. For boolean values please have a look at the `Comment` column for understanding how to pass them.
+
+## Run the training script
+You can also simply use the training script::
+```bash
+python3 training.py \
+--epochs 20 \
+--train-input-path "path/to/your/train_data" \
+--test-input-path "path/to/your/test_data" \
+--hidden-layers "[[12, 6], [6, 3]]"
+```
+
+for help just run:
+```bash
+python3 training.py --help
+```
 
 | Argument             | Type  | Required | Default value                 | Comment                                                                                                                                                                                  |
 | -------------------- | ----- | -------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | batch_size           | int   | False    | 32                            |                                                                                                                                                                                          |
-| drop_last            | int   | False    | 1                             | True/False                                                                                                                                                                               |
-| pin_memory           | int   | False    | 1                             | True/False                                                                                                                                                                               |
+| drop_last            | bool   | False    | True                             |  --drop-last / --no-drop-last                                                                                                                                                                               |
+| pin_memory           | bool   | False    | True                             | --pin-memory / --no-pin-memory                                                                                                                                                                               |
 | num_workers          | int   | False    | 0                             | 0 means that the data will be loaded in the main process                                                                                                                                 |
-| use_mps              | int   | False    | 0                             | Set this to `1` if you want to use the [MPS Backend](https://pytorch.org/docs/master/notes/mps.html) for running on Mac using the M1 GPU. process                                        |
+| use_mps              | bool   | False    | False                             | --use-mps / --no-use-mps                                        |
 | model_title          | str   | False    | autoembedder_{`datetime`}.bin |                                                                                                                                                                                          |
 | model_save_path      | str   | False    |                               |                                                                                                                                                                                          |
 | n_save_checkpoints   | int   | False    |                               |                                                                                                                                                                                          |
 | lr                   | float | False    | 0.001                         |                                                                                                                                                                                          |
-| amsgrad              | int   | False    | 0                             | True/False                                                                                                                                                                               |
+| amsgrad              | bool   | False    | False                             | --amsgrad / --no-amsgrad                                                                                                                                                                               |
 | epochs               | int   | True     |                               |
 | dropout_rate         | float | False    | 0                             | Dropout rate for the dropout layers in the encoder and decoder.                                                                                                                          |
-| layer_bias           | int   | False    | 1                             | True/False                                                                                                                                                                               |  |
-| weight_decay         | float | False    | 0                             |                                                                                                                                                                                          |
+| layer_bias           | bool   | False    | True                             | --layer-bias / --no-layer-bias                                                                                                                                                                               |  |
+| weight_decay         | float | False    | False                             |                                                                                                                                                                                          |
 | l1_lambda            | float | False    | 0                             |                                                                                                                                                                                          |
-| xavier_init          | int   | False    | 0                             | True/False                                                                                                                                                                               |
+| xavier_init          | bool   | False    | False                             | --xavier-init / --no-xavier-init                                                                                                                                                                               |
 | activation           | str   | False    | tanh                          | Activation function; either `tanh`, `relu`, `leaky_relu` or `elu`                                                                                                                        |
 | tensorboard_log_path | str   | False    |                               |                                                                                                                                                                                          |
-| trim_eval_errors     | int   | False    | 0                             | Removes the max and min loss when calculating the `mean loss diff` and `median loss diff`. This can be useful if some rows create very high losses.                                      |
+| trim_eval_errors     | bool   | False    | False                             |--trim-eval-errors / --no-trim-eval-errors; Removes the max and min loss when calculating the `mean loss diff` and `median loss diff`. This can be useful if some rows create very high losses.                                      |
 | verbose              | int   | False    | 0                             | Set this to `1` if you want to see the model summary and the validation and evaluation results. set this to `2` if you want to see the training progress bar. `0` means no output.       |
 | target               | str   | False    |                               | The target column. If not set no evaluation will be performed.                                                                                                                           |
 | train_input_path     | str   | True     |                               |                                                                                                                                                                                          |
@@ -102,16 +117,7 @@ This is a list of all parameters that can be passed to the Autoembedder for trai
 | eval_input_path      | str   | False    |                               | Path to the evaluation data. If no path is provided no evaluation will be performed.                                                                                                     |  |
 | hidden_layers        | str   | True     |                               | Contains a string representation of a list of list of integers which represents the hidden layer structure. E.g.: `"[[64, 32], [32, 16], [16, 8]]"` activation                           |
 | cat_columns          | str   | False    | "[]"                          | Contains a string representation of a list of list of categorical columns (strings). The columns which use the same encoder should be together in a list. E.g.: `"[['a', 'b'], ['c']]"`. |
-
-
-## Run the training script
-Something like this should do it:
-```bash
-python3 training.py --epochs 20 \
---train_input_path "path/to/your/train_data" \
---test_input_path "path/to/your/test_data" \
---hidden_layers "[[12, 6], [6, 3]]"
-```
+| drop-cat-columns           | bool   | False    |                             |--drop-cat-columns / --no-drop-cat-columns
 
 
 ## Why additional embedding layers?
