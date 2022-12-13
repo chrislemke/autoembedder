@@ -59,7 +59,7 @@ def model_input(
         "cuda"
         if torch.cuda.is_available()
         else "mps"
-        if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
+        if torch.backends.mps.is_available() and parameters.get("use_mps", False)
         else "cpu"
     )
     cat = []
@@ -72,7 +72,7 @@ def model_input(
                 if (
                     feature.dtype == torch.float64
                     and torch.backends.mps.is_available()
-                    and parameters.get("use_mps", 0) == 1
+                    and parameters.get("use_mps", False)
                 ):
                     feature = feature.to(torch.float32)
                 cont.append(feature)
@@ -226,26 +226,22 @@ class Autoembedder(nn.Module):
         hl = self.config["hidden_layers"]
 
         encoder_input = nn.Linear(
-            in_features, hl[0][0], bias=self.config.get("layer_bias", 1) == 1
+            in_features, hl[0][0], bias=self.config.get("layer_bias", True)
         )
         encoder_hidden_layers = nn.ModuleList(
             [
-                nn.Linear(
-                    hl[x][0], hl[x][1], bias=self.config.get("layer_bias", 1) == 1
-                )
+                nn.Linear(hl[x][0], hl[x][1], bias=self.config.get("layer_bias", True))
                 for x in range(len(hl))
             ]
         )
         decoder_hidden_layers = nn.ModuleList(
             [
-                nn.Linear(
-                    hl[x][1], hl[x][0], bias=self.config.get("layer_bias", 1) == 1
-                )
+                nn.Linear(hl[x][1], hl[x][0], bias=self.config.get("layer_bias", True))
                 for x in reversed(range(len(hl)))
             ]
         )
         decoder_output = nn.Linear(
-            hl[0][0], in_features, bias=self.config.get("layer_bias", 1) == 1
+            hl[0][0], in_features, bias=self.config.get("layer_bias", True)
         )
 
         encoder = nn.Sequential(encoder_input, *encoder_hidden_layers)

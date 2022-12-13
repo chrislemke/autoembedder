@@ -7,7 +7,7 @@ import torch
 from einops import rearrange
 from torch.nn import MSELoss
 
-from autoembedder.model import Autoembedder, model_input
+from src.model import Autoembedder, model_input
 
 
 def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None) -> Tuple[float, float]:  # type: ignore
@@ -90,7 +90,7 @@ def __predict(
         "cuda"
         if torch.cuda.is_available()
         else "mps"
-        if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
+        if torch.backends.mps.is_available() and parameters.get("use_mps", False)
         else "cpu"
     )
 

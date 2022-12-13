@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Autoembedder"
-version = "0.1.20"
+version = "0.2.0"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
 authors = ["Christopher Lemke <chris@syhbl.mozmail.com>"]
 license = "MIT"
@@ -8,7 +8,7 @@ readme = "docs/README.md"
 homepage = "https://chrislemke.github.io/autoembedder/"
 documentation = "https://chrislemke.github.io/autoembedder/"
 repository = "https://github.com/chrislemke/autoembedder"
-packages = [{ include = "autoembedder" }]
+packages = [{ include = "src" }]
 classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -31,11 +31,12 @@ fastparquet = "2022.12.0"
 pandas = "1.5.2"
 torch = "1.12.1"
 torchinfo = "1.7.1"
-einops = "0.6.0"
+einops = "^0.6.0"
 tqdm = "4.64.1"
 tensorboard = "2.11.0"
-pytorch-ignite = "0.4.10"
+pytorch-ignite = "^0.4.10"
 numpy = "1.23.5"
+typer = "^0.7.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.4.2"
@@ -44,7 +45,7 @@ mkdocs-material = "8.5.8"
 
 [tool.poetry.group.dev.dependencies]
 black = {extras = ["jupyter"], version = "^22.12.0"}
-isort = "^5.10.1"
+isort = "^5.11.1"
 mypy = "^0.991"
 pre-commit = "^2.20.0"
 pylint = "^2.15.8"

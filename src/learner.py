@@ -29,8 +29,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
-from autoembedder.evaluator import loss_delta
-from autoembedder.model import Autoembedder, model_input
+from src.evaluator import loss_delta
+from src.model import Autoembedder, model_input
 
 date = datetime.now()
 
@@ -66,22 +66,25 @@ def fit(
             "cuda"
             if torch.cuda.is_available()
             else "mps"
-            if torch.backends.mps.is_available() and parameters.get("use_mps", 0) == 1
+            if torch.backends.mps.is_available() and parameters.get("use_mps", False)
             else "cpu"
         )
     )
-    if torch.backends.mps.is_available() is False or parameters.get("use_mps", 0) == 0:
+    if (
+        torch.backends.mps.is_available() is False
+        or parameters.get("use_mps", False) is False
+    ):
         model = model.double()
 
     optimizer = Adam(
         model.parameters(),
         lr=parameters.get("lr", 1e-3),
         weight_decay=parameters.get("weight_decay", 0),
-        amsgrad=parameters.get("amsgrad", 0) == 1,
+        amsgrad=parameters.get("amsgrad", False),
     )
     criterion = MSELoss()
 
-    if parameters.get("xavier_init", 0) == 1:
+    if parameters.get("xavier_init", False):
         model.init_xavier_weights()
 
     tb_logger = None
@@ -110,7 +113,7 @@ def fit(
 
     if parameters.get("verbose", 0) >= 1:
         __print_summary(model, train_dataloader, parameters)
-    __attach_progress_bar(trainer, parameters.get("verbose", 0) == 2)
+    __attach_progress_bar(trainer, parameters.get("verbose", False))
     __attach_tb_logger_if_needed(
         trainer, validator, evaluator, tb_logger, model, optimizer, parameters
     )
@@ -139,7 +142,7 @@ def fit(
                 if torch.cuda.is_available()
                 else "mps"
                 if torch.backends.mps.is_available()
-                and parameters.get("use_mps", 0) == 1
+                and parameters.get("use_mps", False)
                 else "cpu"
             ),
         )
@@ -430,7 +433,7 @@ def __attach_checkpoint_saving_if_needed(
         return engine.state.metrics[metric]
 
     if (
-        parameters.get("n_save_checkpoints", 0) == 0
+        parameters.get("n_save_checkpoints", False)
         or parameters.get("model_save_path", None) is None
     ):
         return
