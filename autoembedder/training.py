@@ -7,9 +7,9 @@ import pandas as pd
 import torch
 import typer
 
-from src import learner
-from src.data import dataloader
-from src.model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
+from autoembedder import learner
+from autoembedder.data import dataloader
+from autoembedder.model import Autoembedder, embedded_sizes_and_dims, num_cont_columns
 
 app = typer.Typer(rich_markup_mode="rich")
 

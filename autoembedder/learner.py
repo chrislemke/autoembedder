@@ -29,8 +29,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchinfo import summary
 
-from src.evaluator import loss_delta
-from src.model import Autoembedder, model_input
+from autoembedder.evaluator import loss_delta
+from autoembedder.model import Autoembedder, model_input
 
 date = datetime.now()
 

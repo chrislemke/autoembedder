@@ -7,7 +7,7 @@ import torch
 from einops import rearrange
 from torch.nn import MSELoss
 
-from src.model import Autoembedder, model_input
+from autoembedder.model import Autoembedder, model_input
 
 
 def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None) -> Tuple[float, float]:  # type: ignore
