@@ -53,7 +53,7 @@ def fit(
         model (Autoembedder): The model to be trained.
         train_dataloader (torch.utils.data.DataLoader): The dataloader for the training data.
         test_dataloader (torch.utils.data.DataLoader): The dataloader for the test data.
-        df (Optional[Union[dd.DataFrame, pd.DataFrame]], optional): Dask or Pandas DataFrame for the evaluation step.
+        eval_df (Optional[Union[dd.DataFrame, pd.DataFrame]], optional): Dask or Pandas DataFrame for the evaluation step.
             If the path to the evaluation data is given in the parameters (`eval_input_path`) this argument is not needed.
             If neither `eval_input_path` nor `eval_df` is given, no evaluation step is performed.
 

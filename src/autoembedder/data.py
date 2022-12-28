@@ -20,7 +20,7 @@ class _Dataset(IterableDataset):
             None
         """
         super().__init__()
-        self.ddf = _Dataset.__data_from_source(source)
+        self.ddf = _Dataset._data_from_source(source)
         if drop_cat_columns:
             self.ddf = self.ddf.drop(
                 self.ddf.columns[self.ddf.dtypes == "category"], axis=1
@@ -33,7 +33,7 @@ class _Dataset(IterableDataset):
         raise NotImplementedError
 
     @staticmethod
-    def __data_from_source(
+    def _data_from_source(
         source: Union[str, dd.DataFrame, pd.DataFrame]
     ) -> dd.DataFrame:
         if isinstance(source, str):

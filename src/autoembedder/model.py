@@ -128,7 +128,7 @@ class Autoembedder(nn.Module):
         self.embeddings = nn.ModuleList(
             [nn.Embedding(t[0], t[1]) for t in embedding_sizes]
         )
-        self.encoder, self.decoder = self.__autoencoder(num_cont_features)
+        self.encoder, self.decoder = self._autoencoder(num_cont_features)
 
         print(f"Set model config: {config}")
         print(f"Model `in_features`: {self.encoder[0].in_features}")
@@ -172,29 +172,29 @@ class Autoembedder(nn.Module):
             x.clone().detach()
         )  # Concatenated x values - used with the custom loss function: `AutoEmbLoss`.
 
-        x = self.__encode(x)
+        x = self._encode(x)
         self.code_value = x.clone().detach()  # Stores the values of the code layer.
-        return self.__decode(x)
+        return self._decode(x)
 
     def init_xavier_weights(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
 
-    def __encode(self, x: torch.Tensor) -> torch.Tensor:
+    def _encode(self, x: torch.Tensor) -> torch.Tensor:
         x = nn.Tanh()(self.encoder[0](x))
         for layer in self.encoder[1:]:
-            x = self.__activation(layer(x))
+            x = self._activation(layer(x))
             x = nn.Dropout(self.config.get("dropout_rate", 0.0))(x)
         return x
 
-    def __decode(self, x: torch.Tensor) -> torch.Tensor:
+    def _decode(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.decoder[:-1]:
-            x = self.__activation(layer(x))
+            x = self._activation(layer(x))
             x = nn.Dropout(self.config.get("dropout_rate", 0.0))(x)
         return self.decoder[-1](x)
 
-    def __activation(self, x: torch.Tensor) -> torch.Tensor:
+    def _activation(self, x: torch.Tensor) -> torch.Tensor:
         if self.config.get("activation", "tanh") == "tanh":
             return nn.Tanh()(x)
         if self.config.get("activation", "tanh") == "relu":
@@ -210,12 +210,12 @@ class Autoembedder(nn.Module):
             """
         )
 
-    def __autoencoder(
+    def _autoencoder(
         self, num_cont_features: int
     ) -> Tuple[nn.Sequential, nn.Sequential]:
         """
         Args:
-            config (Dict[str, Any]): Configuration containing the hidden layer structure of the model.
+            num_cont_features (int): Number of continues features.
         Returns:
             Tuple[torch.nn.Sequential, torch.nn.Sequential]: Tuple containing the encoder and decoder.
         """

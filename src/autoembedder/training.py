@@ -85,7 +85,7 @@ def main(
     ),
 ) -> None:
     """
-    Main function for parsing arguments and start `__prepare_and_fit`.
+    Main function for parsing arguments and start `_prepare_and_fit`.
     In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
 
     Returns:
@@ -128,10 +128,10 @@ def main(
         "verbose": verbose,
     }
 
-    __prepare_and_fit(parameters, m_config)
+    _prepare_and_fit(parameters, m_config)
 
 
-def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
+def _prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
 
     """
     Prepares the data by creating a training and testing `dataloader`. `num_continuous_cols` is determined and passed to the
@@ -155,7 +155,7 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
     test_dl = dataloader(parameters["test_input_path"], parameters)
     num_continuous_cols = num_cont_columns(train_dl.dataset.ddf)
     if parameters.get("drop_cat_columns", False) is False:
-        __check_for_consistent_cat_rows(
+        _check_for_consistent_cat_rows(
             train_dl.dataset.ddf, ast.literal_eval(parameters["cat_columns"])
         )
     embedded_sizes = embedded_sizes_and_dims(
@@ -168,7 +168,7 @@ def __prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
     learner.fit(parameters, model, train_dl, test_dl)
 
 
-def __check_for_consistent_cat_rows(
+def _check_for_consistent_cat_rows(
     df: pd.DataFrame, cat_columns: Iterable[List[str]]
 ) -> None:
 

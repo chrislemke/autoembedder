@@ -57,7 +57,7 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optio
     for losses_df, losses in [(df_0, losses_0), (df_1, losses_1)]:
         loss = MSELoss()
         for batch in losses_df.itertuples(index=False):
-            losses.append(__predict(model, batch, loss, parameters))
+            losses.append(_predict(model, batch, loss, parameters))
 
     if parameters.get("trim_eval_errors", 0) == 1:
         losses_0.remove(max(losses_0))
@@ -70,7 +70,7 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optio
     )
 
 
-def __predict(
+def _predict(
     model: Autoembedder, batch: NamedTuple, loss_fn: MSELoss, parameters: Dict
 ) -> float:
 
@@ -99,13 +99,13 @@ def __predict(
         cat, cont = model_input(batch, parameters)
         cat = rearrange(cat, "c r -> r c")
         cont = rearrange(cont, "c r -> r c")
-        cat = __adjust_dtype(cat, model).to(device)
-        cont = __adjust_dtype(cont, model).to(device)
+        cat = _adjust_dtype(cat, model).to(device)
+        cont = _adjust_dtype(cont, model).to(device)
         out = model(cat, cont)
     return loss_fn(out, model.last_target).item()
 
 
-def __adjust_dtype(data: torch.Tensor, model: Autoembedder) -> torch.Tensor:
+def _adjust_dtype(data: torch.Tensor, model: Autoembedder) -> torch.Tensor:
     if (
         torch.float64 in [param.dtype for param in model.parameters()]
         and data.dtype == torch.float32

@@ -30,9 +30,6 @@ jobs:
       - name: Check with mypy
         run: |
           poetry run mypy --config-file=pyproject.toml .
-      - name: Check with bandit
-        run: |
-          poetry run bandit -r ./src/autoembedder/*
       - name: Lint with pylint
         run: |
           poetry run pylint --rcfile=pyproject.toml ./src/autoembedder ./tests
