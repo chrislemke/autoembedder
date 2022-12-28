@@ -1,1 +1,1 @@
-:::autoembedder.model
+:::src.autoembedder.model

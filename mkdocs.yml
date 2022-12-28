@@ -46,7 +46,12 @@ extra:
 plugins:
   - search
   - autorefs
-  - mkdocstrings
+  - mkdocstrings:
+      handlers:
+        python:
+          option:
+            show_root_heading: false
+
 
 extra_javascript:
   - javascripts/mathjax.js
@@ -57,8 +62,8 @@ extra_javascript:
 
 nav:
   - Code reference:
-      - Training: training.md
       - Learner: learner.md
       - Data: data.md
       - Model: model.md
       - Evaluator: evaluator.md
+  - How to contribute: CONTRIBUTING.md
