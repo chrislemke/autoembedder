@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/chrislemke/autoembedder/compare/v0.2.2...v0.2.3) (2023-01-04)
+
+
+### CI/CD
+
+* enable caching ([c1bf46f](https://github.com/chrislemke/autoembedder/commit/c1bf46fa4c3d49dda342ac748593f3d197b40008))
+
 ## [0.2.2](https://github.com/chrislemke/autoembedder/compare/v0.2.1...v0.2.2) (2022-12-28)
 
 

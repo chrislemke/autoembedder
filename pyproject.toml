@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Autoembedder"
-version = "0.2.2"
+version = "0.2.3"
 description = "PyTorch autoencoder with additional embeddings layer for categorical data."
 authors = ["Christopher Lemke <chris@syhbl.mozmail.com>"]
 license = "MIT"
