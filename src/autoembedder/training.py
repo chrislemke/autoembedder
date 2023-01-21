@@ -33,7 +33,7 @@ def _check_for_consistent_cat_rows(
 
     df_columns = df.select_dtypes(include="category").columns.to_list()
     cat_columns = list(itertools.chain(*cat_columns))  # type: ignore
-    assert set(df_columns) == set(
+    assert set(df_columns) == set(  # nosec
         cat_columns
     ), f"""
         The rows from the dataframe should be consistent to the ones defined in `--cat_columns`! Remember to adjust the

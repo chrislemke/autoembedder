@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies and project
         run: |
           poetry env use ${{ matrix.python-version }}
-          poetry install --with test
+          poetry install
       - name: Check with isort
         run: |
           poetry run isort --check-only .
