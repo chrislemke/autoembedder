@@ -22,7 +22,7 @@ def embedded_sizes_and_dims(
     Returns:
         List[Tuple[int, int]]: Each tuple contains the number of values and the dimensions for the corresponding embedding layer.
     """
-    assert (
+    assert (  # nosec
         train_df.columns == test_df.columns
     ).all(), "Columns of both DataFrames must be equal!"
     df = dd.concat([train_df, test_df]).compute()
