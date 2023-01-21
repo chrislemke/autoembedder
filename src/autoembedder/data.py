@@ -26,12 +26,6 @@ class _Dataset(IterableDataset):
                 self.ddf.columns[self.ddf.dtypes == "category"], axis=1
             )
 
-    def __iter__(self) -> Any:
-        return self.ddf.itertuples(index=False)
-
-    def __getitem__(self, index: int) -> None:
-        raise NotImplementedError
-
     @staticmethod
     def _data_from_source(
         source: Union[str, dd.DataFrame, pd.DataFrame]
@@ -50,6 +44,12 @@ class _Dataset(IterableDataset):
         else:
             raise ValueError("`source` must be a string or a Dask DataFrame!")
         return ddf
+
+    def __getitem__(self, index: int) -> None:
+        raise NotImplementedError
+
+    def __iter__(self) -> Any:
+        return self.ddf.itertuples(index=False)
 
 
 def dataloader(

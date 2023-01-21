@@ -10,10 +10,54 @@ from torch.nn import MSELoss
 from autoembedder.model import Autoembedder, model_input
 
 
-def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None) -> Tuple[float, float]:  # type: ignore
+def _adjust_dtype(data: torch.Tensor, model: Autoembedder) -> torch.Tensor:
+    if (
+        torch.float64 in [param.dtype for param in model.parameters()]
+        and data.dtype == torch.float32
+    ):
+        return data.type(torch.DoubleTensor)
+    return data
+
+
+def _predict(
+    model: Autoembedder, batch: NamedTuple, loss_fn: MSELoss, parameters: Dict
+) -> float:
+
     """
-    This evaluation function calculates the loss delta between the training and test set.
-        This delta describes how well the model can distinguish between the categories of the target variable.
+    Args:
+        model (Autoembedder): Instance from the model used for prediction.
+        batch (NamedTuple): A batch of data.
+        loss_fn (torch.nn.MSELoss): Instance of the loss function.
+        parameters (Dict): Dictionary with the parameters used for evaluation.
+            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
+
+    Returns:
+        float: Loss value.
+    """
+
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available() and parameters.get("use_mps", False)
+        else "cpu"
+    )
+
+    with torch.no_grad():
+        model.eval()
+        cat, cont = model_input(batch, parameters)
+        cat = rearrange(cat, "c r -> r c")
+        cont = rearrange(cont, "c r -> r c")
+        cat = _adjust_dtype(cat, model).to(device)
+        cont = _adjust_dtype(cont, model).to(device)
+        out = model(cat, cont)
+    return loss_fn(out, model.last_target).item()
+
+
+def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None) -> Tuple[float, float]:  # type: ignore
+    """This evaluation function calculates the loss delta between the training
+    and test set. This delta describes how well the model can distinguish
+    between the categories of the target variable.
 
     Args:
         _ (None): Not in use. Needed by Pytorch-ignite.
@@ -68,47 +112,3 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optio
     return np.absolute(np.mean(losses_1) - np.mean(losses_0)), np.absolute(
         np.median(losses_1) - np.median(losses_0)
     )
-
-
-def _predict(
-    model: Autoembedder, batch: NamedTuple, loss_fn: MSELoss, parameters: Dict
-) -> float:
-
-    """
-    Args:
-        model (Autoembedder): Instance from the model used for prediction.
-        batch (NamedTuple): A batch of data.
-        loss_fn (torch.nn.MSELoss): Instance of the loss function.
-        parameters (Dict): Dictionary with the parameters used for evaluation.
-            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
-
-    Returns:
-        float: Loss value.
-    """
-
-    device = torch.device(
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available() and parameters.get("use_mps", False)
-        else "cpu"
-    )
-
-    with torch.no_grad():
-        model.eval()
-        cat, cont = model_input(batch, parameters)
-        cat = rearrange(cat, "c r -> r c")
-        cont = rearrange(cont, "c r -> r c")
-        cat = _adjust_dtype(cat, model).to(device)
-        cont = _adjust_dtype(cont, model).to(device)
-        out = model(cat, cont)
-    return loss_fn(out, model.last_target).item()
-
-
-def _adjust_dtype(data: torch.Tensor, model: Autoembedder) -> torch.Tensor:
-    if (
-        torch.float64 in [param.dtype for param in model.parameters()]
-        and data.dtype == torch.float32
-    ):
-        return data.type(torch.DoubleTensor)
-    return data

@@ -35,139 +35,6 @@ from autoembedder.model import Autoembedder, model_input
 date = datetime.now()
 
 
-def fit(
-    parameters: Dict,
-    model: Autoembedder,
-    train_dataloader: DataLoader,
-    test_dataloader: DataLoader,
-    eval_df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None,
-) -> Autoembedder:
-
-    """
-    This method is the general wrapper around the fitting process. It is preparing the optimizer, the loss function, the trainer,
-    the validator and the evaluator. Then it attaches everything to the corresponding engines and runs the training.
-
-    Args:
-        parameters (Dict[str, Any]): The parameters of the training process.
-            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
-        model (Autoembedder): The model to be trained.
-        train_dataloader (torch.utils.data.DataLoader): The dataloader for the training data.
-        test_dataloader (torch.utils.data.DataLoader): The dataloader for the test data.
-        eval_df (Optional[Union[dd.DataFrame, pd.DataFrame]], optional): Dask or Pandas DataFrame for the evaluation step.
-            If the path to the evaluation data is given in the parameters (`eval_input_path`) this argument is not needed.
-            If neither `eval_input_path` nor `eval_df` is given, no evaluation step is performed.
-
-    Returns:
-        Autoembedder: Trained Autoembedder model.
-    """
-
-    model = model.to(
-        torch.device(
-            "cuda"
-            if torch.cuda.is_available()
-            else "mps"
-            if torch.backends.mps.is_available() and parameters.get("use_mps", False)
-            else "cpu"
-        )
-    )
-    if (
-        torch.backends.mps.is_available() is False
-        or parameters.get("use_mps", False) is False
-    ):
-        model = model.double()
-
-    optimizer = Adam(
-        model.parameters(),
-        lr=parameters.get("lr", 1e-3),
-        weight_decay=parameters.get("weight_decay", 0),
-        amsgrad=parameters.get("amsgrad", False),
-    )
-    criterion = MSELoss()
-
-    if parameters.get("xavier_init", False):
-        model.init_xavier_weights()
-
-    tb_logger = None
-    if parameters.get("tensorboard_log_path", None):
-        tb_logger = TensorboardLogger(
-            log_dir=f"{parameters['tensorboard_log_path']}/{date.strftime('%Y.%m.%d-%H_%M')}"
-        )
-
-    trainer = Engine(
-        partial(
-            __training_step,
-            model=model,
-            optimizer=optimizer,
-            criterion=criterion,
-            parameters=parameters,
-        )
-    )
-    validator = Engine(
-        partial(
-            __validation_step, model=model, criterion=criterion, parameters=parameters
-        )
-    )
-    evaluator = Engine(
-        partial(loss_delta, model=model, parameters=parameters, df=eval_df)
-    )
-
-    if parameters.get("verbose", 0) >= 1:
-        __print_summary(model, train_dataloader, parameters)
-    __attach_progress_bar(trainer, parameters.get("verbose", False))
-    __attach_tb_logger_if_needed(
-        trainer, validator, evaluator, tb_logger, model, optimizer, parameters
-    )
-    __attach_terminate_on_nan(trainer)
-    __attach_validation(
-        trainer, validator, test_dataloader, parameters.get("verbose", 0) >= 1
-    )
-
-    if (
-        parameters.get("eval_input_path", None) or eval_df is not None
-    ) and parameters.get("target", None):
-        __attach_evaluation(
-            trainer, evaluator, test_dataloader, parameters.get("verbose", 0) >= 1
-        )
-    __attach_checkpoint_saving_if_needed(
-        trainer, validator, model, optimizer, parameters
-    )
-
-    __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
-
-    if parameters.get("load_checkpoint_path", None):
-        checkpoint = torch.load(
-            parameters["load_checkpoint_path"],
-            map_location=torch.device(
-                "cuda"
-                if torch.cuda.is_available()
-                else "mps"
-                if torch.backends.mps.is_available()
-                and parameters.get("use_mps", False)
-                else "cpu"
-            ),
-        )
-        Checkpoint.load_objects(
-            to_load={"model": model, "optimizer": optimizer, "trainer": trainer},
-            checkpoint=checkpoint,
-        )
-        print(
-            f"""
-            Checkpoint loaded!
-            Epoch_length: {checkpoint['trainer']['epoch_length']}
-            Iterations: {checkpoint['trainer']['iteration']}
-            """
-        )
-
-    trainer.run(
-        train_dataloader,
-        max_epochs=parameters["epochs"],
-        epoch_length=(
-            len(train_dataloader.dataset.ddf.index) // train_dataloader.batch_size
-        ),
-    )
-    return model
-
-
 def __training_step(
     engine: Engine,
     batch: NamedTuple,
@@ -177,11 +44,10 @@ def __training_step(
     parameters: Dict,
 ) -> Union[np.float32, np.float64]:
 
-    """
-    Here the actual training step is performed. It is called by the training engine.
-    Not using [PyTorch ignite](https://github.com/pytorch/ignite)
-    this code would be wrapped in some kind of training loop over a range of epochs and batches.
-    But using ignite this is handled by the engine.
+    """Here the actual training step is performed. It is called by the training
+    engine. Not using [PyTorch ignite](https://github.com/pytorch/ignite) this
+    code would be wrapped in some kind of training loop over a range of epochs
+    and batches. But using ignite this is handled by the engine.
 
     Args:
         engine (ignite.engine.Engine): The engine that is calling this method.
@@ -466,3 +332,137 @@ def __print_summary(
         summary(model)
         return
     summary(model, [(cat.shape[1], batch_size), (cont.shape[1], batch_size)])  # type: ignore
+
+
+def fit(
+    parameters: Dict,
+    model: Autoembedder,
+    train_dataloader: DataLoader,
+    test_dataloader: DataLoader,
+    eval_df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None,
+) -> Autoembedder:
+
+    """This method is the general wrapper around the fitting process. It is
+    preparing the optimizer, the loss function, the trainer, the validator and
+    the evaluator. Then it attaches everything to the corresponding engines and
+    runs the training.
+
+    Args:
+        parameters (Dict[str, Any]): The parameters of the training process.
+            In the [documentation](https://chrislemke.github.io/autoembedder/#parameters) all possible parameters are listed.
+        model (Autoembedder): The model to be trained.
+        train_dataloader (torch.utils.data.DataLoader): The dataloader for the training data.
+        test_dataloader (torch.utils.data.DataLoader): The dataloader for the test data.
+        eval_df (Optional[Union[dd.DataFrame, pd.DataFrame]], optional): Dask or Pandas DataFrame for the evaluation step.
+            If the path to the evaluation data is given in the parameters (`eval_input_path`) this argument is not needed.
+            If neither `eval_input_path` nor `eval_df` is given, no evaluation step is performed.
+
+    Returns:
+        Autoembedder: Trained Autoembedder model.
+    """
+
+    model = model.to(
+        torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps"
+            if torch.backends.mps.is_available() and parameters.get("use_mps", False)
+            else "cpu"
+        )
+    )
+    if (
+        torch.backends.mps.is_available() is False
+        or parameters.get("use_mps", False) is False
+    ):
+        model = model.double()
+
+    optimizer = Adam(
+        model.parameters(),
+        lr=parameters.get("lr", 1e-3),
+        weight_decay=parameters.get("weight_decay", 0),
+        amsgrad=parameters.get("amsgrad", False),
+    )
+    criterion = MSELoss()
+
+    if parameters.get("xavier_init", False):
+        model.init_xavier_weights()
+
+    tb_logger = None
+    if parameters.get("tensorboard_log_path", None):
+        tb_logger = TensorboardLogger(
+            log_dir=f"{parameters['tensorboard_log_path']}/{date.strftime('%Y.%m.%d-%H_%M')}"
+        )
+
+    trainer = Engine(
+        partial(
+            __training_step,
+            model=model,
+            optimizer=optimizer,
+            criterion=criterion,
+            parameters=parameters,
+        )
+    )
+    validator = Engine(
+        partial(
+            __validation_step, model=model, criterion=criterion, parameters=parameters
+        )
+    )
+    evaluator = Engine(
+        partial(loss_delta, model=model, parameters=parameters, df=eval_df)
+    )
+
+    if parameters.get("verbose", 0) >= 1:
+        __print_summary(model, train_dataloader, parameters)
+    __attach_progress_bar(trainer, parameters.get("verbose", False))
+    __attach_tb_logger_if_needed(
+        trainer, validator, evaluator, tb_logger, model, optimizer, parameters
+    )
+    __attach_terminate_on_nan(trainer)
+    __attach_validation(
+        trainer, validator, test_dataloader, parameters.get("verbose", 0) >= 1
+    )
+
+    if (
+        parameters.get("eval_input_path", None) or eval_df is not None
+    ) and parameters.get("target", None):
+        __attach_evaluation(
+            trainer, evaluator, test_dataloader, parameters.get("verbose", 0) >= 1
+        )
+    __attach_checkpoint_saving_if_needed(
+        trainer, validator, model, optimizer, parameters
+    )
+
+    __attach_tb_teardown_if_needed(tb_logger, trainer, validator, evaluator, parameters)
+
+    if parameters.get("load_checkpoint_path", None):
+        checkpoint = torch.load(
+            parameters["load_checkpoint_path"],
+            map_location=torch.device(
+                "cuda"
+                if torch.cuda.is_available()
+                else "mps"
+                if torch.backends.mps.is_available()
+                and parameters.get("use_mps", False)
+                else "cpu"
+            ),
+        )
+        Checkpoint.load_objects(
+            to_load={"model": model, "optimizer": optimizer, "trainer": trainer},
+            checkpoint=checkpoint,
+        )
+        print(
+            f"""
+            Checkpoint loaded!
+            Epoch_length: {checkpoint['trainer']['epoch_length']}
+            Iterations: {checkpoint['trainer']['iteration']}
+            """
+        )
+
+    trainer.run(
+        train_dataloader,
+        max_epochs=parameters["epochs"],
+        epoch_length=(
+            len(train_dataloader.dataset.ddf.index) // train_dataloader.batch_size
+        ),
+    )
+    return model
