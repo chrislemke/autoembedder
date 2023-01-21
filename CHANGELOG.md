@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/chrislemke/autoembedder/compare/v0.2.3...v0.2.4) (2023-01-21)
+
+
+### CI/CD
+
+* add fast forward action ([#6](https://github.com/chrislemke/autoembedder/issues/6)) ([b4da09c](https://github.com/chrislemke/autoembedder/commit/b4da09cfd50ceb049b7d85d99c59bb20d22bc726))
+
 ## [0.2.3](https://github.com/chrislemke/autoembedder/compare/v0.2.2...v0.2.3) (2023-01-04)
 
 
