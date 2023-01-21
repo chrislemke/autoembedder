@@ -1,6 +1,7 @@
 ![The autoembedder](https://raw.githubusercontent.com/chrislemke/autoembedder/master/docs/assets/images/image.png)
 # The Autoembedder
 [![deploy package](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml/badge.svg)](https://github.com/chrislemke/autoembedder/actions/workflows/deploy-package.yml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/0d7834c236b242b6b45728acc44af37c)](https://www.codacy.com/gh/chrislemke/autoembedder/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=chrislemke/autoembedder&amp;utm_campaign=Badge_Grade)
 [![pypi](https://img.shields.io/pypi/v/autoembedder)](https://pypi.org/project/autoembedder/)
 [![python version](https://img.shields.io/pypi/pyversions/autoembedder?logo=python&logoColor=yellow)](https://python.org)
 [![docs](https://img.shields.io/badge/docs-mkdoks%20material-blue)](https://chrislemke.github.io/autoembedder/)
