@@ -68,6 +68,9 @@ disallow_any_generics = false
 warn_return_any = false
 exclude = ["docs/*"]
 
+[tool.pylint.TYPECHECK]
+generated-members=["numpy.*", "torch.*"]
+
 [tool.pylint.messages_control]
 disable = [
     "C0301",
