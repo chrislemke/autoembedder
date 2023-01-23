@@ -71,7 +71,6 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optio
     Returns:
         Tuple[float, float]: `loss_mean_diff`, `loss_std_diff` and DataFrame.
     """
-
     if parameters.get("eval_input_path", None) is not None:
         try:
             df = (

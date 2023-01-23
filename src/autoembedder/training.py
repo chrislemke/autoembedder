@@ -56,7 +56,6 @@ def _prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
     Returns:
         None
     """
-
     if (
         torch.backends.mps.is_available() is False
         or parameters.get("use_mps", False) is False
