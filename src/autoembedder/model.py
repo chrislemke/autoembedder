@@ -208,7 +208,6 @@ class Autoembedder(nn.Module):
         Returns:
             torch.Tensor :Output of the 'Autoembedder'. It contains the concatenated and processed continues and categorical data.
         """
-
         x_cont = rearrange(x_cont, "c r -> r c")
 
         x_emb = []
