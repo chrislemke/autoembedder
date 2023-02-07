@@ -2,15 +2,16 @@ default_language_version:
   python: python3.10
 
 ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: "develop"
+  autoupdate_commit_msg: "ci: pre-commit autoupdate"
+  autoupdate_schedule: weekly
   skip: [poetry-lock, poetry-export]
 
 repos:
-  - repo: https://github.com/floatingpurr/sync_with_poetry
-    rev: "0.4.0"
-    hooks:
-      - id: sync_with_poetry
-        args: ["--all"]
-
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v2.1.1
     hooks:
@@ -92,20 +93,20 @@ repos:
       - id: pyupgrade
 
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 23.1.0
     hooks:
       - id: black
       - id: black-jupyter
         files: \.ipynb$
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+    rev: 5.12.0
     hooks:
       - id: isort
         args: ["--profile=black"]
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v2.16.0b1
+    rev: v2.16.1
     hooks:
       - id: pylint
         args: ["--rcfile=pyproject.toml"]
