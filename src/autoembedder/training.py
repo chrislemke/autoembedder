@@ -17,7 +17,6 @@ app = typer.Typer(rich_markup_mode="rich")
 def _check_for_consistent_cat_rows(
     df: pd.DataFrame, cat_columns: Iterable[List[str]]
 ) -> None:
-
     """Checks if the categorical rows in the the dataframe (`df`) are
     consistent with the categorical columns (`cat_columns`). This is needed so
     the is set up correctly. Please check the `--cat_columns` parameter for

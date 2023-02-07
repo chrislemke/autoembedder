@@ -43,7 +43,6 @@ def __training_step(
     criterion: MSELoss,
     parameters: Dict,
 ) -> Union[np.float32, np.float64]:
-
     """Here the actual training step is performed. It is called by the training
     engine. Not using [PyTorch ignite](https://github.com/pytorch/ignite) this
     code would be wrapped in some kind of training loop over a range of epochs
@@ -84,7 +83,6 @@ def __validation_step(
     criterion: MSELoss,
     parameters: Dict,
 ) -> Union[np.float32, np.float64]:
-
     """
     Args:
         engine (ignite.engine.Engine): The engine that is calling this method.
@@ -341,7 +339,6 @@ def fit(
     test_dataloader: DataLoader,
     eval_df: Optional[Union[dd.DataFrame, pd.DataFrame]] = None,
 ) -> Autoembedder:
-
     """This method is the general wrapper around the fitting process. It is
     preparing the optimizer, the loss function, the trainer, the validator and
     the evaluator. Then it attaches everything to the corresponding engines and

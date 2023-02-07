@@ -22,7 +22,6 @@ def _adjust_dtype(data: torch.Tensor, model: Autoembedder) -> torch.Tensor:
 def _predict(
     model: Autoembedder, batch: NamedTuple, loss_fn: MSELoss, parameters: Dict
 ) -> float:
-
     """
     Args:
         model (Autoembedder): Instance from the model used for prediction.
