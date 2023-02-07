@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/chrislemke/autoembedder/compare/v0.2.4...v0.2.5) (2023-02-07)
+
+
+### CI/CD
+
+* improve github actions ([#11](https://github.com/chrislemke/autoembedder/issues/11)) ([7ba6fc6](https://github.com/chrislemke/autoembedder/commit/7ba6fc64b95d36f763a547538caf985cb533db77))
+
 ## [0.2.4](https://github.com/chrislemke/autoembedder/compare/v0.2.3...v0.2.4) (2023-01-21)
 
 
