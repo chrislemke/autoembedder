@@ -2,6 +2,13 @@ default_language_version:
   python: python3.10
 
 ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: "develop"
+  autoupdate_commit_msg: "ci: pre-commit autoupdate"
+  autoupdate_schedule: weekly
   skip: [poetry-lock, poetry-export]
 
 repos:
@@ -63,7 +70,7 @@ repos:
       - id: text-unicode-replacement-char
 
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.5.1
+    rev: v1.6.0.rc1
     hooks:
       - id: docformatter
 
@@ -86,18 +93,20 @@ repos:
       - id: pyupgrade
 
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 23.1.0
     hooks:
       - id: black
+      - id: black-jupyter
+        files: \.ipynb$
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+    rev: 5.12.0
     hooks:
       - id: isort
         args: ["--profile=black"]
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v2.15.10
+    rev: v2.16.1
     hooks:
       - id: pylint
         args: ["--rcfile=pyproject.toml"]
@@ -128,6 +137,7 @@ repos:
     hooks:
       - id: poetry-check
       - id: poetry-lock
+        language_version: 3.10.8
       - id: poetry-export
         args:
           [

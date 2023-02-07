@@ -17,7 +17,6 @@ app = typer.Typer(rich_markup_mode="rich")
 def _check_for_consistent_cat_rows(
     df: pd.DataFrame, cat_columns: Iterable[List[str]]
 ) -> None:
-
     """Checks if the categorical rows in the the dataframe (`df`) are
     consistent with the categorical columns (`cat_columns`). This is needed so
     the is set up correctly. Please check the `--cat_columns` parameter for
@@ -56,7 +55,6 @@ def _prepare_and_fit(parameters: Dict, model_params: Dict) -> None:
     Returns:
         None
     """
-
     if (
         torch.backends.mps.is_available() is False
         or parameters.get("use_mps", False) is False

@@ -22,7 +22,6 @@ def _adjust_dtype(data: torch.Tensor, model: Autoembedder) -> torch.Tensor:
 def _predict(
     model: Autoembedder, batch: NamedTuple, loss_fn: MSELoss, parameters: Dict
 ) -> float:
-
     """
     Args:
         model (Autoembedder): Instance from the model used for prediction.
@@ -71,7 +70,6 @@ def loss_delta(_, __, model: Autoembedder, parameters: Dict[str, Any], df: Optio
     Returns:
         Tuple[float, float]: `loss_mean_diff`, `loss_std_diff` and DataFrame.
     """
-
     if parameters.get("eval_input_path", None) is not None:
         try:
             df = (
