@@ -13,7 +13,7 @@ ci:
 
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v2.4.0
+    rev: v3.6.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -36,7 +36,7 @@ repos:
           ]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -70,7 +70,7 @@ repos:
       - id: text-unicode-replacement-char
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.3.2
+    rev: v1.3.3
     hooks:
     -   id: python-safety-dependencies-check
         files: pyproject.toml
@@ -81,7 +81,7 @@ repos:
       - id: docformatter
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.0
+    rev: 1.8.7
     hooks:
       - id: nbqa-check-ast
       - id: nbqa-mypy
@@ -89,36 +89,36 @@ repos:
       - id: nbqa-pyupgrade
 
   - repo: https://github.com/bwhmather/ssort
-    rev: v0.11.6
+    rev: 0.13.0
     hooks:
       - id: ssort
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.18.0
     hooks:
       - id: pyupgrade
 
   - repo: https://github.com/psf/black
-    rev: 23.10.1
+    rev: 24.10.0
     hooks:
       - id: black
       - id: black-jupyter
         files: \.ipynb$
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
         args: ["--profile=black"]
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v3.0.1
+    rev: v3.3.1
     hooks:
       - id: pylint
         args: ["--rcfile=pyproject.toml"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.6.1
+    rev: v1.12.1
     hooks:
       - id: mypy
         args:
@@ -126,7 +126,7 @@ repos:
         exclude: "tests"
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.7.10
     hooks:
       - id: bandit
         exclude: "^tests/"
@@ -134,12 +134,12 @@ repos:
           - "-r"
 
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.6.1
+    rev: 0.7.1
     hooks:
       - id: nbstripout
 
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.7.0
+    rev: 1.8.0
     hooks:
       - id: poetry-check
       - id: poetry-lock
