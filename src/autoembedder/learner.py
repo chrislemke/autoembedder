@@ -362,9 +362,12 @@ def fit(
         torch.device(
             "cuda"
             if torch.cuda.is_available()
-            else "mps"
-            if torch.backends.mps.is_available() and parameters.get("use_mps", False)
-            else "cpu"
+            else (
+                "mps"
+                if torch.backends.mps.is_available()
+                and parameters.get("use_mps", False)
+                else "cpu"
+            )
         )
     )
     if (
@@ -437,10 +440,12 @@ def fit(
             map_location=torch.device(
                 "cuda"
                 if torch.cuda.is_available()
-                else "mps"
-                if torch.backends.mps.is_available()
-                and parameters.get("use_mps", False)
-                else "cpu"
+                else (
+                    "mps"
+                    if torch.backends.mps.is_available()
+                    and parameters.get("use_mps", False)
+                    else "cpu"
+                )
             ),
         )
         Checkpoint.load_objects(
