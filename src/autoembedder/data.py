@@ -28,7 +28,7 @@ class _Dataset(IterableDataset):
 
     @staticmethod
     def _data_from_source(
-        source: Union[str, dd.DataFrame, pd.DataFrame]
+        source: Union[str, dd.DataFrame, pd.DataFrame],
     ) -> dd.DataFrame:
         if isinstance(source, str):
             try:
